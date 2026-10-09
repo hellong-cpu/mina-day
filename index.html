@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F3F4F2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E100F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F6F4F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#100E0F" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -25,9 +25,9 @@ html,body{overscroll-behavior-y:none}
 /* Layout: phone = one column + floating tab bar; ≥960px = quiet left rail + wide content.
    Look: neutral paper ground, hairline-bordered white surfaces, ink type, one evergreen accent. */
 :root{
-  --bg:#F3F4F2; --card:#FFFFFF; --sunken:#ECEEEB; --soft:#F7F8F6; --line:#E2E5E1; --line2:#D3D8D3;
-  --fg:#121513; --fg2:#525955; --fg3:#737A75; --fg4:#9EA5A0; --ring:#BFC6C1;
-  --accent:#1E6B57; --accent-ink:#175746; --accent-weak:#E2EFE9; --on-accent:#FFFFFF;
+  --bg:#F6F4F5; --card:#FFFFFF; --sunken:#EFECEE; --soft:#FAF8F9; --line:#E8E3E6; --line2:#D9D2D6;
+  --fg:#1A1418; --fg2:#5A5157; --fg3:#7B7178; --fg4:#A69CA2; --ring:#C9C0C5;
+  --accent:#F2357E; --accent-ink:#C21864; --accent-weak:#FFE6EF; --on-accent:#FFFFFF;
   --red:#C2362B; --red-weak:#FBEAE7; --sat:#2B5FB8;
   --violet:#6B3FC4; --violet-weak:#F0EAFB; --violet-dot:#8B63E0;
   --green:#1E6B57; --green-weak:#E2EFE9; --green-dot:#2E9A7C;
@@ -39,9 +39,9 @@ html,body{overscroll-behavior-y:none}
   --r:18px; --r-ctl:12px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E100F; --card:#161917; --sunken:#1F2320; --soft:#1A1D1B; --line:#272C29; --line2:#343a36;
+  --bg:#100E0F; --card:#1A1719; --sunken:#242023; --soft:#1D1A1C; --line:#2E292C; --line2:#3B3539;
   --fg:#EEF1EE; --fg2:#B2B9B4; --fg3:#949B96; --fg4:#6E7570; --ring:#4A514C;
-  --accent:#5CC2A2; --accent-ink:#86D6BC; --accent-weak:#16302A; --on-accent:#0B1410;
+  --accent:#FF5C9E; --accent-ink:#FF8CB8; --accent-weak:#3A1626; --on-accent:#FFFFFF;
   --red:#FF7A6E; --red-weak:#3A1D1A; --sat:#82A8F0;
   --violet:#C3A6FF; --violet-weak:#2A2340; --violet-dot:#A786F5;
   --green:#86D6BC; --green-weak:#16302A; --green-dot:#4FBF9C;
@@ -49,9 +49,9 @@ html,body{overscroll-behavior-y:none}
   --blue:#9CBBF5; --blue-weak:#1B2742; --blue-dot:#6C98EC;
   --star:#F0BE55; --scrim:rgba(0,0,0,.6); --glass:rgba(22,25,23,.86); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0E100F; --card:#161917; --sunken:#1F2320; --soft:#1A1D1B; --line:#272C29; --line2:#343a36;
+  --bg:#100E0F; --card:#1A1719; --sunken:#242023; --soft:#1D1A1C; --line:#2E292C; --line2:#3B3539;
   --fg:#EEF1EE; --fg2:#B2B9B4; --fg3:#949B96; --fg4:#6E7570; --ring:#4A514C;
-  --accent:#5CC2A2; --accent-ink:#86D6BC; --accent-weak:#16302A; --on-accent:#0B1410;
+  --accent:#FF5C9E; --accent-ink:#FF8CB8; --accent-weak:#3A1626; --on-accent:#FFFFFF;
   --red:#FF7A6E; --red-weak:#3A1D1A; --sat:#82A8F0;
   --violet:#C3A6FF; --violet-weak:#2A2340; --violet-dot:#A786F5;
   --green:#86D6BC; --green-weak:#16302A; --green-dot:#4FBF9C;
@@ -176,7 +176,7 @@ button.card:hover,button.mini:hover,.memo:hover{border-color:var(--line2)}
 .day.sun .dn,.day.hol .dn{color:var(--red)}
 .day.sat .dn{color:var(--sat)}
 .day.today .dn{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent-ink);font-weight:700}
-.day.sel .dn{background:var(--fg);color:var(--bg);font-weight:700;box-shadow:none}
+.day.sel .dn{background:var(--accent);color:var(--on-accent);font-weight:700;box-shadow:none}
 .day .dots{display:flex;gap:3px;height:5px}
 .day .dots i{width:5px;height:5px;border-radius:3px;display:block}
 .day .chiplist{display:none}
@@ -244,7 +244,7 @@ button.card:hover,button.mini:hover,.memo:hover{border-color:var(--line2)}
 .search input{flex:1;border:0;background:transparent;height:44px;font-size:14.5px;outline:none;min-width:0}
 
 /* fab */
-.fab{position:fixed;right:20px;bottom:calc(92px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:17px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(20,60,48,.28);z-index:15;transition:transform .12s}
+.fab{position:fixed;right:20px;bottom:calc(92px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:17px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(242,53,126,.32);z-index:15;transition:transform .12s}
 .fab:active{transform:scale(.92)}
 .fab svg{width:24px;height:24px}
 
@@ -752,7 +752,7 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='1';
+var APPV='2';
 function save(){lsSet('mina-local',S)}
 function clearSamples(){COLS.forEach(function(c){S[c]=S[c].filter(function(x){return !x.sample})});save();render();toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c]});return JSON.stringify(o,null,1)}

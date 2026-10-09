@@ -281,6 +281,18 @@ select.inp{font-weight:500;appearance:auto}
 .setrow small{display:block;font-size:12.5px;color:var(--fg3);font-weight:400;margin-top:2px}
 .setrow span{flex:1}
 .fine{font-size:12.5px;color:var(--fg3);line-height:1.6;margin:0}
+.iconbtn{position:relative}
+.badge{position:absolute;top:8px;right:7px;width:8px;height:8px;border-radius:4px;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+.sync{border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--soft)}
+.sync b{font-size:15px;font-weight:600}
+.sync .who{display:flex;align-items:center;gap:10px}
+.sync .who span{flex:1;min-width:0;font-size:13px;color:var(--fg2);overflow-wrap:anywhere}
+.sync .st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--fg3)}
+.sync .st i{width:7px;height:7px;border-radius:4px;background:var(--fg4)}
+.sync .st.on i{background:#2E9A7C}.sync .st.err i{background:var(--red)}
+.sync .btn.google{background:var(--accent);color:var(--on-accent)}
+.textlink{font-size:13px;color:var(--fg3);text-align:center;padding:6px;text-decoration:underline;text-underline-offset:3px}
+.toast{white-space:normal!important;max-width:calc(100% - 32px);text-align:center;width:max-content}
 </style>
 </head>
 <body>
@@ -380,11 +392,11 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 
 function put(col,item){
   var arr=S[col].filter(function(x){return x.id!==item.id});arr.push(item);S[col]=arr;render();
-  if(db){db.doc(col+'/'+item.id).set(clean(item)).catch(dbFail)}else lsSet('mina-local',S);
+  save();if(user&&fsdb){cloudCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
 }
 function del(col,id){
   S[col]=S[col].filter(function(x){return x.id!==id});render();
-  if(db){db.doc(col+'/'+id).delete().catch(dbFail)}else lsSet('mina-local',S);
+  save();if(user&&fsdb){cloudCol(col).doc(id).delete().catch(dbFail)}
 }
 function clean(o){var r={};for(var k in o)if(k!=='id'&&o[k]!==undefined)r[k]=o[k];return r}
 function dbFail(e){toast(e&&e.code==='quota_exceeded'?'저장 공간이 가득 찼어요. 오래된 항목을 지워주세요.':'저장하지 못했어요. 잠시 후 다시 해주세요.')}
@@ -470,7 +482,7 @@ function homeV(){
 
   var p=parse(TODAY);
   return sampleNotice()+
-  '<div class="head-row"><div class="head"><span class="h-sub">'+greet+', 미나님</span><span class="h-big num">'+p.m+'월 '+p.d+'일 '+WD[dow(p.y,p.m,p.d)]+'요일</span></div><button class="iconbtn" data-act="settings" aria-label="설정과 백업"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>'+
+  '<div class="head-row"><div class="head"><span class="h-sub">'+greet+', 미나님</span><span class="h-big num">'+p.m+'월 '+p.d+'일 '+WD[dow(p.y,p.m,p.d)]+'요일</span></div><button class="iconbtn" data-act="settings" aria-label="설정과 백업">'+(user?'':'<i class="badge" aria-hidden="true"></i>')+'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>'+
   '<div class="home-grid"><div class="home-col">'+
     '<button class="card tap" data-go="cal"><span class="card-title" style="width:100%"><b>오늘 일정</b><span class="link num">'+cnt+'개 ›</span></span>'+todayRows+'</button>'+
     '<div class="card"><span class="card-title"><b>다가오는 날</b><button class="link" data-go="year">연간 보기 ›</button></span>'+up+'</div>'+
@@ -632,8 +644,8 @@ function drawSheet(){
   } else if(k==='settings'){
     var lb=lsGet('mina-lastbackup',0),cnt=0;COLS.forEach(function(c){cnt+=S[c].length});
     var hasSample=COLS.some(function(c){return S[c].some(function(x){return x.sample})});
-    h='<h2>설정과 백업</h2>'+
-    '<p class="fine">입력한 내용은 이 기기에 저장돼요. 앱을 업데이트해도 그대로 남아요. 다만 앱을 지우거나 폰을 바꾸면 사라지니, 가끔 백업 파일을 저장해 두세요.</p>'+
+    h='<h2>설정과 백업</h2>'+syncH()+
+    (user?'<p class="fine">입력한 내용은 구글 계정에 저장돼서 폰과 PC가 똑같이 맞춰져요. 인터넷이 끊겨도 쓸 수 있고, 다시 연결되면 자동으로 저장돼요.</p>':'<p class="fine">지금은 이 기기에만 저장돼요. 앱을 업데이트해도 그대로 남지만, 앱을 지우거나 폰을 바꾸면 사라져요. 로그인하거나 가끔 백업 파일을 저장해 두세요.</p>')+
     '<div class="setlist">'+
       '<button type="button" class="setrow" data-act="export"><span>백업 파일 저장하기<small>'+(lb?'마지막 백업: '+new Date(lb).toLocaleDateString('ko-KR'):'아직 백업한 적이 없어요')+' · 항목 '+cnt+'개</small></span>›</button>'+
       '<label class="setrow" for="f-import"><span>백업 파일 불러오기<small>지금 내용이 백업 파일 내용으로 바뀌어요</small></span>›</label>'+
@@ -658,6 +670,7 @@ function setField(name,v){
   if(name==='cal'&&v==='lunar'&&+d.d>30)d.d='30';
 }
 function saveSheet(){
+  if(form.kind==='settings'){if(!user&&emailOpen)emailAuth(false);return}
   var d=form.d,k=form.kind,now=Date.now();
   if(k==='event'){if(!(d.title||'').trim()||!d.date)return;put('events',{id:d.id||uid(),title:d.title.trim(),date:d.date,time:d.time||'',repeat:d.repeat||'none',color:d.color||'blue',sample:d.sample||undefined});cal.sel=d.date;var p=parse(d.date);cal.y=p.y;cal.m=p.m}
   if(k==='todo'){if(!(d.text||'').trim())return;put('todos',{id:d.id||uid(),text:d.text.trim(),due:d.due||'',note:(d.note||'').trim(),important:!!d.important,done:!!d.done,createdAt:d.createdAt||now,doneAt:d.doneAt||0,sample:d.sample||undefined})}
@@ -676,6 +689,11 @@ sheet.addEventListener('click',function(e){
   var a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='sheet-close')closeSheet();
   if(a.dataset.act==='export')exportBackup();
+  if(a.dataset.act==='login-google')signInGoogle();
+  if(a.dataset.act==='toggle-email'){emailOpen=!emailOpen;drawSheetKeep()}
+  if(a.dataset.act==='email-login')emailAuth(false);
+  if(a.dataset.act==='email-signup')emailAuth(true);
+  if(a.dataset.act==='logout'){if(window.firebase)firebase.auth().signOut().then(function(){toast('로그아웃했어요. 이 기기에는 지금 내용이 그대로 남아요.')})}
   if(a.dataset.act==='clear-sample-s'){clearSamples();closeSheet()}
   if(a.dataset.act==='sheet-del'){if(!armed){armed=true;drawSheetKeep();return}del(COLMAP[form.kind],form.d.id);closeSheet();toast('삭제했어요')}
 });
@@ -752,9 +770,9 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='2';
+var APPV='4';
 function save(){lsSet('mina-local',S)}
-function clearSamples(){COLS.forEach(function(c){S[c]=S[c].filter(function(x){return !x.sample})});save();render();toast('예시를 지웠어요. 이제 직접 채워보세요')}
+function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c]});return JSON.stringify(o,null,1)}
 function exportBackup(){
   var name='미나의하루-백업-'+TODAY+'.json',blob=new Blob([backupJSON()],{type:'application/json'});
@@ -770,10 +788,99 @@ function importBackup(f){
   var r=new FileReader();
   r.onload=function(){
     try{var o=JSON.parse(r.result);if(!o||o.app!=='mina-day')throw 0;
-      COLS.forEach(function(c){S[c]=Array.isArray(o[c])?o[c]:[]});save();closeSheet();render();toast('백업을 불러왔어요')
+      var old={};COLS.forEach(function(c){old[c]=S[c];S[c]=Array.isArray(o[c])?o[c]:[]});save();closeSheet();render();
+      if(user&&fsdb){COLS.forEach(function(c){var keep={};S[c].forEach(function(it){keep[it.id]=1;cloudCol(c).doc(it.id).set(clean(it)).catch(dbFail)});old[c].forEach(function(it){if(!keep[it.id])cloudCol(c).doc(it.id).delete().catch(function(){})})})}
+      toast('백업을 불러왔어요')
     }catch(e){toast('미나의 하루 백업 파일이 아니에요. 파일을 다시 확인해 주세요.')}
   };
   r.readAsText(f);
+}
+
+/* ================= 폰·PC 연동 (Firebase) ================= */
+var FB_CFG={apiKey:"AIzaSyAwfPPifX8fSEchVdmHurDzrc8k0XfknsQ",authDomain:"mina-day.firebaseapp.com",projectId:"mina-day",storageBucket:"mina-day.firebasestorage.app",messagingSenderId:"1059378371779",appId:"1:1059378371779:web:6294dabb4cf9a507829676"};
+var fsdb=null,user=null,unsubs=[],syncState='off',emailOpen=false,cloudReady=false;
+function cloudCol(c){return fsdb.collection('users').doc(user.uid).collection(c)}
+function syncH(){
+  if(!cloudReady)return '<div class="sync"><b>폰·PC 연동</b><span class="fine">연동 기능을 불러오는 중이에요. 인터넷 연결을 확인해 주세요.</span></div>';
+  if(user){
+    var st={on:['on','실시간으로 맞춰지는 중'],loading:['','불러오는 중…'],error:['err','연결에 문제가 있어요. 잠시 후 다시 열어주세요.']}[syncState]||['','연결 중…'];
+    return '<div class="sync"><b>폰·PC 연동 켜짐</b><div class="who"><span>'+esc(user.email||'로그인됨')+'<br><span class="st '+st[0]+'"><i></i>'+st[1]+'</span></span><button type="button" class="btn ghost small" data-act="logout">로그아웃</button></div></div>';
+  }
+  return '<div class="sync"><b>폰·PC 연동</b><span class="fine">폰과 PC에서 같은 계정으로 로그인하면 실시간으로 똑같이 맞춰져요. 지금 이 기기에 있는 내용은 첫 로그인 때 자동으로 옮겨져요.</span>'+
+    '<button type="button" class="btn google" data-act="login-google">Google로 로그인</button>'+
+    (emailOpen?'<div class="field"><label for="f-email">이메일</label><input class="inp" type="email" id="f-email" autocomplete="email" inputmode="email"></div><div class="field"><label for="f-pw">비밀번호 (6자 이상)</label><input class="inp" type="password" id="f-pw" autocomplete="current-password"></div><div class="actions"><button type="button" class="btn ghost" data-act="email-signup">처음이에요</button><button type="button" class="btn" data-act="email-login">로그인</button></div>':'<button type="button" class="textlink" data-act="toggle-email">구글 로그인이 안 되면 이메일로 로그인</button>')+
+  '</div>';
+}
+function authErr(e){
+  var c=(e&&e.code)||'';
+  var m={'auth/popup-closed-by-user':'로그인 창이 닫혔어요. 다시 눌러주세요.','auth/cancelled-popup-request':'','auth/unauthorized-domain':'Firebase의 Authorized domains에 hellong-cpu.github.io를 추가해 주세요.','auth/operation-not-allowed':'Firebase에서 이 로그인 방법이 아직 꺼져 있어요.','auth/invalid-credential':'이메일 또는 비밀번호가 맞지 않아요.','auth/invalid-login-credentials':'이메일 또는 비밀번호가 맞지 않아요.','auth/wrong-password':'비밀번호가 맞지 않아요.','auth/user-not-found':'가입된 이메일이 아니에요. 처음이에요를 눌러주세요.','auth/email-already-in-use':'이미 가입된 이메일이에요. 로그인을 눌러주세요.','auth/weak-password':'비밀번호는 6자 이상으로 해주세요.','auth/invalid-email':'이메일 주소를 다시 확인해 주세요.','auth/network-request-failed':'인터넷 연결을 확인해 주세요.','auth/too-many-requests':'시도가 너무 많아요. 잠시 후 다시 해주세요.'}[c];
+  if(m==='')return; toast(m||('로그인하지 못했어요 ('+c+')'));
+}
+function signInGoogle(){
+  if(!cloudReady){toast('인터넷 연결을 확인해 주세요.');return}
+  var p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+  firebase.auth().signInWithPopup(p).catch(function(e){
+    var c=e&&e.code;
+    if(c==='auth/popup-blocked'||c==='auth/operation-not-supported-in-this-environment'||c==='auth/web-storage-unsupported'){firebase.auth().signInWithRedirect(p).catch(authErr);return}
+    authErr(e);
+  });
+}
+function emailAuth(create){
+  var em=(document.getElementById('f-email')||{}).value||'',pw=(document.getElementById('f-pw')||{}).value||'';
+  em=em.trim(); if(!em||!pw){toast('이메일과 비밀번호를 입력해 주세요.');return}
+  var a=firebase.auth();
+  (create?a.createUserWithEmailAndPassword(em,pw):a.signInWithEmailAndPassword(em,pw)).catch(authErr);
+}
+function migrateLocal(){
+  var key='mina-migrated-'+user.uid; if(lsGet(key,false))return Promise.resolve();
+  var local={};COLS.forEach(function(c){local[c]=S[c].filter(function(x){return !x.sample})});
+  return Promise.all(COLS.map(function(c){
+    return cloudCol(c).get().then(function(snap){
+      var have={};snap.docs.forEach(function(d){have[d.id]=1});
+      var bt=fsdb.batch(),n=0;
+      local[c].forEach(function(it){if(!have[it.id]&&n<450){bt.set(cloudCol(c).doc(it.id),clean(it));n++}});
+      return n?bt.commit():null;
+    });
+  })).then(function(){lsSet(key,true)});
+}
+function startSync(){
+  syncState='loading';
+  var me=user;
+  migrateLocal().catch(function(){}).then(function(){
+    if(user!==me)return;
+    COLS.forEach(function(c){
+      unsubs.push(cloudCol(c).onSnapshot(function(snap){
+        S[c]=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return o});
+        save();syncState='on';render();if(form&&form.kind==='settings')drawSheetKeep();
+      },function(){syncState='error';if(form&&form.kind==='settings')drawSheetKeep()}));
+    });
+  });
+}
+function initCloud(){
+  if(!window.firebase||!firebase.auth||!firebase.firestore)return;
+  try{
+    firebase.initializeApp(FB_CFG);
+    fsdb=firebase.firestore();
+    try{fsdb.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
+    cloudReady=true;
+    firebase.auth().getRedirectResult().catch(authErr);
+    firebase.auth().onAuthStateChanged(function(u){
+      unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
+      var was=user;user=u||null;
+      if(user){if(!was)toast('로그인했어요. 폰과 PC가 연동돼요');emailOpen=false;startSync()}else syncState='off';
+      render();if(form&&form.kind==='settings')drawSheetKeep();
+    });
+  }catch(e){}
+}
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function loadFirebase(){
+  var V='10.14.1',bases=['https://www.gstatic.com/firebasejs/'+V+'/','https://cdn.jsdelivr.net/npm/firebase@'+V+'/'];
+  function tryBase(i){
+    if(i>=bases.length)return Promise.reject();
+    var B=bases[i];
+    return loadScript(B+'firebase-app-compat.js').then(function(){return Promise.all([loadScript(B+'firebase-auth-compat.js'),loadScript(B+'firebase-firestore-compat.js')])}).catch(function(){return tryBase(i+1)});
+  }
+  tryBase(0).then(function(){initCloud();if(form&&form.kind==='settings')drawSheetKeep()}).catch(function(){});
 }
 function seed(){
   var t=TODAY,c=Date.now();
@@ -808,6 +915,7 @@ function seed(){
   if(L&&typeof L==='object'){COLS.forEach(function(c){S[c]=Array.isArray(L[c])?L[c]:[]})}
   else{S=seed();save()}
   loaded=true;render();
+  loadFirebase();
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
   /* 자정이 지나면 날짜 갱신 */

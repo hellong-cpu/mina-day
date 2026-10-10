@@ -512,7 +512,8 @@ function annualSub(o){var a=o.a;return md(o.date)+(isLunar(a)?' · <span class="
 /* ================= 집안일 루틴 ================= */
 function weekIdx(t){var p=parse(t);return Math.floor((utc(p.y,p.m,p.d)/864e5+3)/7)}
 function monOf(t){var p=parse(t);return addDays(t,-((dow(p.y,p.m,p.d)+6)%7))}
-function rtMatch(r,t){var p=parse(t);if(r.mode==='weekly'){if((r.days||[]).indexOf(dow(p.y,p.m,p.d))<0)return false;var w=+r.weeks||1;if(w<2)return true;var k=weekIdx(t)-weekIdx(r.anchor||r.since||TODAY);return ((k%w)+w)%w===0}if(r.mode==='monthly')return p.d===Math.min(+r.mday||1,dim(p.y,p.m));return false}
+function rtMatch(r,t){var p=parse(t);if(r.mode==='weekly'){if((r.days||[]).indexOf(dow(p.y,p.m,p.d))<0)return false;var w=+r.weeks||1;if(w<2)return true;var k=weekIdx(t)-weekIdx(r.anchor||r.since||TODAY);return ((k%w)+w)%w===0}if(r.mode==='monthly'){if(r.mtype==='nth'){if(dow(p.y,p.m,p.d)!==+r.mwd)return false;var n=+r.nth||1;return n>0?Math.ceil(p.d/7)===n:p.d+7>dim(p.y,p.m)}return p.d===Math.min(+r.mday||1,dim(p.y,p.m))}return false}
+var NTH={'1':'첫째','2':'둘째','3':'셋째','4':'넷째','-1':'마지막'};
 function rtDue(r){
   if(r.mode==='every'){var e=Math.max(1,+r.every||7);return r.last?addDays(r.last,e):(r.since||TODAY)}
   if(r.mode==='weekly'&&!(r.days||[]).length)return '9999-12-31';
@@ -523,7 +524,7 @@ function rtDue(r){
 }
 function rtFreq(r){
   if(r.mode==='weekly'){var ds=(r.days||[]).slice().sort(function(a,b){return ((a+6)%7)-((b+6)%7)});return ds.length?((+r.weeks||1)>=2?'격주 ':'매주 ')+ds.map(function(d){return WD[d]}).join('·'):'요일 미정'}
-  if(r.mode==='monthly')return '매월 '+(+r.mday>=31?'말일':(r.mday||1)+'일');
+  if(r.mode==='monthly')return r.mtype==='nth'?'매월 '+NTH[String(r.nth||1)]+' 주 '+WD[+r.mwd||0]+'요일':'매월 '+(+r.mday>=31?'말일':(r.mday||1)+'일');
   return (+r.every||7)+'일마다';
 }
 function rtOn(r,s){
@@ -783,8 +784,10 @@ function drawSheet(){
     (d.mode==='weekly'?'<div class="field"><span class="lab">간격</span>'+segH('weeks',[['1','매주'],['2','격주 (2주에 한 번)']],String(d.weeks||1))+'</div>'+
       ((+d.weeks||1)>=2?'<div class="field"><span class="lab">언제부터</span>'+segH('anchor',[[monOf(TODAY),'이번 주부터'],[addDays(monOf(TODAY),7),'다음 주부터']],d.anchor||monOf(TODAY))+'</div>':''):'')+
     (d.mode==='weekly'?'<div class="field"><span class="lab">요일 (여러 개 선택 가능)</span><div class="wdays">'+[1,2,3,4,5,6,0].map(function(w){return '<button type="button" class="chip soft" data-f="wday" data-v="'+w+'" aria-pressed="'+((d.days||[]).indexOf(w)>=0)+'">'+WD[w]+'</button>'}).join('')+'</div></div>':'')+
-    (d.mode==='monthly'?'<div class="field"><label for="f-rm">날짜</label><select class="inp" id="f-rm" data-f="mday">'+dd+'</select></div>':'')+
-    '<div class="preview"><span class="ph" style="color:var(--accent-ink)">'+rtFreq({mode:d.mode,every:d.every,days:d.days,mday:d.mday,weeks:d.weeks})+'</span><span class="pl">다음 할 날: '+(function(){var r={mode:d.mode,every:d.every,days:d.days,mday:d.mday,weeks:d.weeks,anchor:d.anchor||monOf(TODAY),last:d.last,since:d.since||TODAY};var x=rtDue(r);return x>'9000'?'요일을 골라주세요':(x<=TODAY?'오늘':md(x))})()+'</span></div>'+
+    (d.mode==='monthly'?'<div class="field"><span class="lab">기준</span>'+segH('mtype',[['nth','몇째 주 무슨 요일'],['date','날짜로']],d.mtype||'nth')+'</div>'+
+      ((d.mtype||'nth')==='nth'?'<div class="field"><span class="lab">몇째 주</span>'+chipsH('nth',[['1','첫째'],['2','둘째'],['3','셋째'],['4','넷째'],['-1','마지막']],String(d.nth||1))+'</div><div class="field"><span class="lab">요일</span><div class="wdays">'+[1,2,3,4,5,6,0].map(function(w){return '<button type="button" class="chip soft" data-f="mwd" data-v="'+w+'" aria-pressed="'+(String(d.mwd)===String(w))+'">'+WD[w]+'</button>'}).join('')+'</div></div>'
+      :'<div class="field"><label for="f-rm">날짜</label><select class="inp" id="f-rm" data-f="mday">'+dd+'</select></div>'):'')+
+    '<div class="preview"><span class="ph" style="color:var(--accent-ink)">'+rtFreq({mode:d.mode,every:d.every,days:d.days,mday:d.mday,weeks:d.weeks,mtype:d.mtype||'nth',nth:d.nth,mwd:d.mwd})+'</span><span class="pl">다음 할 날: '+(function(){var r={mode:d.mode,every:d.every,days:d.days,mday:d.mday,weeks:d.weeks,mtype:d.mtype||'nth',nth:d.nth,mwd:d.mwd,anchor:d.anchor||monOf(TODAY),last:d.last,since:d.since||TODAY};var x=rtDue(r);return x>'9000'?'요일을 골라주세요':(x<=TODAY?'오늘':md(x))})()+'</span></div>'+
     footer(!!d.id,(d.name||'').trim());
   } else if(k==='memo'){
     var mode=d.mode||'text';
@@ -850,7 +853,7 @@ function saveSheet(){
   if(k==='todo'){if(!(d.text||'').trim())return;put('todos',{id:d.id||uid(),text:d.text.trim(),due:d.due||'',note:(d.note||'').trim(),important:!!d.important,done:!!d.done,createdAt:d.createdAt||now,doneAt:d.doneAt||0,sample:d.sample||undefined})}
   if(k==='buy'){if(!(d.text||'').trim())return;put('buys',{id:d.id||uid(),text:d.text.trim(),note:(d.note||'').trim(),cat:d.cat||'마트',done:!!d.done,createdAt:d.createdAt||now,sample:d.sample||undefined})}
   if(k==='memo'){if(!memoOk(d))return;var mo=d.mode||'text';put('memos',{id:d.id||uid(),title:(d.title||'').trim(),body:mo==='text'?(d.body||'').trim():'',mode:mo,items:mo==='text'?[]:(d.items||[]).filter(function(x){return (x.t||'').trim()}).map(function(x){return {t:x.t.trim(),done:!!x.done}}),tag:d.tag||'아이디어',pinned:!!d.pinned,updatedAt:now,sample:d.sample||undefined})}
-  if(k==='routine'){if(!(d.name||'').trim())return;if(d.mode==='weekly'&&!(d.days||[]).length){toast('요일을 하나 이상 골라주세요');return}put('routines',{id:d.id||uid(),name:d.name.trim(),mode:d.mode,every:Math.max(1,+d.every||7),days:(d.days||[]).map(Number),mday:+d.mday||1,weeks:d.mode==='weekly'?(+d.weeks||1):1,anchor:d.anchor||monOf(TODAY),last:d.last||'',prev:d.prev||'',since:d.since||TODAY,createdAt:d.createdAt||now,sample:d.sample||undefined})}
+  if(k==='routine'){if(!(d.name||'').trim())return;if(d.mode==='weekly'&&!(d.days||[]).length){toast('요일을 하나 이상 골라주세요');return}put('routines',{id:d.id||uid(),name:d.name.trim(),mode:d.mode,every:Math.max(1,+d.every||7),days:(d.days||[]).map(Number),mday:+d.mday||1,mtype:d.mode==='monthly'?(d.mtype||'nth'):undefined,nth:+d.nth||1,mwd:d.mwd!=null&&d.mwd!==''?+d.mwd:1,weeks:d.mode==='weekly'?(+d.weeks||1):1,anchor:d.anchor||monOf(TODAY),last:d.last||'',prev:d.prev||'',since:d.since||TODAY,createdAt:d.createdAt||now,sample:d.sample||undefined})}
   if(k==='annual'){if(!(d.name||'').trim())return;var it={id:d.id||uid(),name:d.name.trim(),kind:d.kind,cal:(d.kind==='birth'&&d.cal==='lunar')?'lunar':'solar',m:+d.m,d:+d.d,sample:d.sample||undefined};if(d.kind==='card'&&+d.amount)it.amount=+d.amount;put('annual',it)}
   closeSheet();toast('저장했어요');
 }
@@ -901,7 +904,7 @@ document.addEventListener('click',function(e){
   var ds=t.dataset;
   if(ds.toggleTodo){var x=find('todos',ds.toggleTodo);if(x){x=copy(x);x.done=!x.done;x.doneAt=x.done?Date.now():0;put('todos',x);if(x.done)toast('완료했어요')}return}
   if(ds.toggleRt){toggleRt(ds.toggleRt);return}
-  if(ds.editRt){var rr=copy(find('routines',ds.editRt));rr.every=String(rr.every||7);rr.mday=String(rr.mday||1);rr.weeks=String(rr.weeks||1);rr.anchor=rr.anchor||monOf(rr.since||TODAY);openSheet('routine',rr);return}
+  if(ds.editRt){var rr=copy(find('routines',ds.editRt));rr.every=String(rr.every||7);rr.mday=String(rr.mday||1);rr.weeks=String(rr.weeks||1);rr.mtype=rr.mtype||'date';rr.nth=String(rr.nth||1);rr.mwd=String(rr.mwd!=null?rr.mwd:1);rr.anchor=rr.anchor||monOf(rr.since||TODAY);openSheet('routine',rr);return}
   if(ds.memoChk){var mp=ds.memoChk.split(':'),mm=find('memos',mp[0]);if(mm){mm=copy(mm);var it=(mm.items||[])[+mp[1]];if(it){it.done=!it.done;put('memos',mm)}}return}
   if(ds.toggleBuy){var y=find('buys',ds.toggleBuy);if(y){y=copy(y);y.done=!y.done;put('buys',y)}return}
   if(ds.editTodo){openSheet('todo',copy(find('todos',ds.editTodo)));return}
@@ -952,7 +955,7 @@ function newFor(kind){
   if(kind==='buy')openSheet('buy',{text:'',note:'',cat:V.buyCat||'마트'});
   if(kind==='memo')openSheet('memo',{title:'',body:'',tag:'아이디어',pinned:false,mode:'text',items:[]});
   if(kind==='annual')openSheet('annual',{name:'',kind:'birth',cal:'solar',m:'1',d:'1',amount:''});
-  if(kind==='routine'){var tp=parse(TODAY);openSheet('routine',{name:'',mode:'weekly',weeks:'1',anchor:monOf(TODAY),every:'7',days:[dow(tp.y,tp.m,tp.d)],mday:String(tp.d),last:''})}
+  if(kind==='routine'){var tp=parse(TODAY);openSheet('routine',{name:'',mode:'weekly',weeks:'1',mtype:'nth',nth:'1',mwd:String(dow(tp.y,tp.m,tp.d)),anchor:monOf(TODAY),every:'7',days:[dow(tp.y,tp.m,tp.d)],mday:String(tp.d),last:''})}
 }
 document.getElementById('fab').addEventListener('click',function(){
   newFor({home:'todo',cal:'event',list:V.seg==='buy'?'buy':(V.seg==='chore'?'routine':'todo'),memo:'memo',year:'annual'}[V.tab]);
@@ -962,8 +965,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='7';
-var BUILT='2026년 10월 10일 오전 10:05';
+var APPV='8';
+var BUILT='2026년 10월 10일 오전 10:10';
 function save(){lsSet('mina-local',S)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c]});return JSON.stringify(o,null,1)}

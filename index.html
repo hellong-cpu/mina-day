@@ -333,6 +333,10 @@ i.tm{font-style:normal}
 .wkitems{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
 .wkchip{font-size:13px;font-weight:500;padding:5px 10px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .wknone{font-size:13px;color:var(--fg4);padding-top:4px}
+.daysub{font-size:12px;font-weight:600;color:var(--fg3);letter-spacing:.04em;padding-top:4px}
+.ev .check{width:20px;height:20px;border-radius:6px;flex-shrink:0;margin-right:24px}
+.ev .check svg{width:12px;height:12px}
+.ev.done .n{color:var(--fg4);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -520,6 +524,11 @@ function rtFreq(r){
   if(r.mode==='monthly')return '매월 '+(+r.mday>=31?'말일':(r.mday||1)+'일');
   return (+r.every||7)+'일마다';
 }
+function rtOn(r,s){
+  if(r.mode==='every')return r.last===s||(s>=TODAY&&rtDue(r)===s)||(s===TODAY&&rtDue(r)<=TODAY);
+  if(s===TODAY&&rtDue(r)<=TODAY)return true;
+  return rtMatch(r,s)&&s>=(r.since||'');
+}
 function rtToday(){return S.routines.filter(function(r){return r.last===TODAY||rtDue(r)<=TODAY}).sort(function(a,b){var ad=a.last===TODAY,bd=b.last===TODAY;if(ad!==bd)return ad?1:-1;return rtDue(a)<rtDue(b)?-1:1})}
 function rtState(r){
   if(r.last===TODAY)return {l:'오늘 완료',cls:'pill'};
@@ -619,7 +628,8 @@ function homeV(){
       '<button class="mini tap" data-go="list" data-seg="buy"><span class="h-sub" style="font-size:14px">살 것</span><span class="stat num">'+buysLeft.length+'개</span><span class="muted" style="font-size:13px;line-height:1.45">'+(bp||'다 샀어요')+'</span></button>'+
     '</div>'+
     '<div class="card"><span class="card-title"><b>최근 아이디어</b><button class="link" data-go="memo">전체 ›</button></span>'+memos+'</div>'+
-  '</div></div>';
+  '</div></div>'+
+  '<p class="fine num" style="text-align:center;padding:18px 0 4px">마지막 업데이트 '+BUILT+' · 버전 '+APPV+'</p>';
 }
 function colorCls(c){var f=COLORS.filter(function(x){return x[0]===c})[0];return f?f[1]:'c-blue'}
 function ago(t){if(!t)return '';var d=Math.floor((Date.now()-t)/864e5);if(d<=0)return '오늘';if(d===1)return '어제';if(d<7)return d+'일 전';var x=new Date(t);return (x.getMonth()+1)+'월 '+x.getDate()+'일'}
@@ -644,6 +654,10 @@ function calV(){
   items+=holidaysOn(cal.sel).map(holRow).join('');
   annualOn(cal.sel).forEach(function(o){var kd=KIND[o.a.kind]||KIND.etc;items+='<button class="ev tap" data-edit-annual="'+o.a.id+'"><span class="dot '+kd.dot+'"></span><span class="t">종일</span><span class="n">'+esc(o.a.name)+'</span><span class="note">'+kd.label+'</span></button>'});
   eventsOn(cal.sel).forEach(function(e){items+='<button class="ev tap" data-edit-event="'+e.id+'"><span class="dot '+colorCls(e.color)+'"></span><span class="t num">'+(e.time||'종일')+'</span><span class="n">'+esc(e.title)+'</span><span class="note">'+({weekly:'매주',monthly:'매월',yearly:'매년'}[e.repeat]||'')+'</span></button>'});
+  var drs=S.routines.filter(function(r){return rtOn(r,cal.sel)});
+  if(drs.length){items+='<div class="daysub">집안일</div>'+drs.map(function(r){
+    if(cal.sel===TODAY){var on=r.last===TODAY;return '<div class="ev'+(on?' done':'')+'"><button class="check sq'+(on?' on':'')+'" data-toggle-rt="'+r.id+'" aria-label="'+(on?'완료 취소':'했어요')+'">'+ICON_CHECK+'</button><button class="n" data-edit-rt="'+r.id+'" style="text-align:left">'+esc(r.name)+'</button><span class="note">'+(on?'완료':rtState(r).l)+'</span></div>'}
+    return '<button class="ev tap" data-edit-rt="'+r.id+'"><span class="dot c-green"></span><span class="n">'+esc(r.name)+'</span><span class="note">'+(r.last===cal.sel?'완료':rtFreq(r))+'</span></button>'}).join('')}
   if(!items)items='<div class="empty">일정이 없어요</div>';
   return '<div class="row-head"><span class="h-page num">'+y+'년 '+m+'월</span><span style="display:flex;gap:2px"><button class="chip soft" data-act="cal-today" style="height:40px;margin-right:4px">오늘</button><button class="iconbtn" data-act="cal-prev" aria-label="이전 달">'+ICON_L+'</button><button class="iconbtn" data-act="cal-next" aria-label="다음 달">'+ICON_R+'</button></span></div>'+
   '<div class="cal-wrap"><div class="cal"><div class="cal-grid">'+WD.map(function(w,i){return '<span class="wd'+(i===0?' sun':'')+(i===6?' sat':'')+'">'+w+'</span>'}).join('')+'</div><div class="cal-grid">'+cells+'</div></div>'+
@@ -944,7 +958,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='5';
+var APPV='6';
+var BUILT='2026년 10월 10일 오전 9:55';
 function save(){lsSet('mina-local',S)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c]});return JSON.stringify(o,null,1)}

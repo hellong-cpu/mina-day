@@ -1,5 +1,5 @@
 /* 미나의 하루 service worker: 화면 파일과 폰트·SDK만 캐시. 데이터 요청(Firestore, 로그인)은 건드리지 않음. */
-const CACHE = 'mina-day-v8';
+const CACHE = 'mina-day-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './icon-512.png?v=3', './apple-touch-icon.png?v=3'];
 const STATIC_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'www.gstatic.com', 'cdn.jsdelivr.net'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });

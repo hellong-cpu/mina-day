@@ -604,39 +604,39 @@ function homeV(){
   if(!todayRows)todayRows='<div class="empty">오늘은 일정이 없어요</div>';
   var cnt=evs.length+ann.length+hols.length;
 
-  var up=upcoming(4).map(function(o){var k=KIND[o.a.kind]||KIND.etc;
+  var up=upcoming(2).map(function(o){var k=KIND[o.a.kind]||KIND.etc;
     return '<button class="yitem tap" '+editAttr(o.a)+'><span class="tag '+k.cls+'">'+k.label+'</span><span class="txt"><span class="top"><b>'+esc(o.a.name)+'</b></span><small>'+annualSub(o)+'</small></span><span class="'+ddayCls(o.n)+' num">'+ddayLabel(o.n)+'</span></button>'}).join('')||'<div class="empty">연간 탭에서 생일이나 연회비를 추가해 보세요</div>';
 
   var open=S.todos.filter(function(t){return !t.done}).sort(todoSort),done=S.todos.length-open.length;
   var pct=S.todos.length?Math.round(done/S.todos.length*100):0;
-  var topTodos=open.slice(0,4).map(todoRow).join('')||'<div class="empty" style="padding:4px 20px 12px">할 일을 다 끝냈어요</div>';
+  var topTodos=open.slice(0,5).map(todoRow).join('')||'<div class="empty" style="padding:4px 20px 12px">할 일을 다 끝냈어요</div>';
   var buysLeft=S.buys.filter(function(b){return !b.done});
   var bp=buysLeft.slice(0,3).map(function(b){return esc(b.text)}).join(', ')+(buysLeft.length>3?' 외 '+(buysLeft.length-3)+'개':'');
   var memos=S.memos.slice().sort(memoSort).slice(0,3).map(function(m){
     return '<button class="tap" data-edit-memo="'+m.id+'" style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--soft);border-radius:14px;width:100%"><b style="font-size:15px;font-weight:700">'+esc(m.title||'제목 없음')+'</b><small class="muted" style="font-size:13px">'+esc(m.tag)+(m.mode==='check'?' · 체크리스트 '+(m.items||[]).filter(function(x){return x.done}).length+'/'+(m.items||[]).length:'')+' · '+ago(m.updatedAt)+'</small></button>'}).join('')||'<div class="empty">떠오른 생각을 적어두세요</div>';
 
   var upList=[];
-  for(var di=1;di<=14&&upList.length<6;di++){var ds=addDays(TODAY,di);
+  for(var di=1;di<=30&&upList.length<5;di++){var ds=addDays(TODAY,di);
     holidaysOn(ds).forEach(function(h){upList.push({ds:ds,di:di,h:h})});
     annualOn(ds).forEach(function(o){upList.push({ds:ds,di:di,a:o.a})});
     eventsOn(ds).forEach(function(e){upList.push({ds:ds,di:di,e:e})});}
-  var upEv=upList.slice(0,6).map(function(u){
+  var upEv=upList.slice(0,5).map(function(u){
     var lab=u.di===1?'내일':(u.di===2?'모레':(function(p){return p.m+'/'+p.d+' ('+WD[dow(p.y,p.m,p.d)]+')'})(parse(u.ds)));
     if(u.h)return '<div class="ev"><span class="dot '+(u.h.cc==='jp'?'c-orange':'c-red')+'"></span><span class="t wide num">'+lab+'</span><span class="n">'+esc(u.h.n)+'</span><span class="note">'+(u.h.cc==='jp'?'일본':'한국')+' 공휴일</span></div>';
     if(u.a){var kd=KIND[u.a.kind]||KIND.etc;return '<button class="ev tap" '+editAttr(u.a)+'><span class="dot '+kd.dot+'"></span><span class="t wide num">'+lab+'</span><span class="n">'+esc(u.a.name)+'</span><span class="note">'+kd.label+'</span></button>'}
     return '<button class="ev tap" data-edit-event="'+u.e.id+'"><span class="dot '+colorCls(u.e.color)+'"></span><span class="t wide num">'+lab+'</span><span class="n">'+esc(u.e.title)+'</span><span class="note num">'+(u.e.time||'종일')+'</span></button>';
-  }).join('')||'<div class="empty">앞으로 2주 동안 일정이 없어요</div>';
+  }).join('')||'<div class="empty">앞으로 한 달 동안 일정이 없어요</div>';
   var rts=rtToday();
-  var choreCard=S.routines.length?'<div class="card flush"><div class="card-title" style="padding:14px 20px 6px"><b>오늘의 루틴</b><button class="link" data-go="list" data-seg="chore">전체 ›</button></div>'+(rts.length?rts.map(rtRow).join(''):'<div class="empty" style="padding:4px 20px 14px">오늘은 할 루틴이 없어요</div>')+'</div>':'';
+  var choreCard=true?'<div class="card flush"><div class="card-title" style="padding:14px 20px 6px"><b>오늘의 루틴</b><button class="link" data-go="list" data-seg="chore">전체 ›</button></div>'+(rts.length?rts.map(rtRow).join(''):'<div class="empty" style="padding:4px 20px 14px">'+(S.routines.length?'오늘은 할 루틴이 없어요':'리스트 → 루틴에서 집안일이나 연회비를 추가해 보세요')+'</div>')+'</div>':'';
   var p=parse(TODAY);
   return sampleNotice()+
   '<div class="head-row"><div class="head"><span class="h-sub">'+greet+', 미나님</span><span class="h-big num">'+p.m+'월 '+p.d+'일 '+WD[dow(p.y,p.m,p.d)]+'요일</span></div><button class="iconbtn" data-act="settings" aria-label="설정과 백업">'+(user?'':'<i class="badge" aria-hidden="true"></i>')+'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>'+
   '<div class="home-grid"><div class="home-col">'+
     '<button class="card tap" data-go="cal"><span class="card-title" style="width:100%"><b>오늘 일정</b><span class="link num">'+cnt+'개 ›</span></span>'+todayRows+'</button>'+
     choreCard+
+    '<div class="card flush"><div class="card-title" style="padding:14px 20px 6px"><b>할 일</b><button class="link" data-go="list" data-seg="todo">'+(open.length>5?open.length+'개 전체':'전체')+' ›</button></div>'+topTodos+'</div>'+
     '<div class="card"><span class="card-title"><b>다가오는 일정</b><button class="link" data-go="cal">캘린더 ›</button></span>'+upEv+'</div>'+
     '<div class="card"><span class="card-title"><b>다가오는 날</b><button class="link" data-go="year">연간 보기 ›</button></span>'+up+'</div>'+
-    '<div class="card flush"><div class="card-title" style="padding:14px 20px 6px"><b>할 일</b><button class="link" data-go="list" data-seg="todo">전체 ›</button></div>'+topTodos+'</div>'+
   '</div><div class="home-col">'+
     '<div class="grid2">'+
       '<button class="mini tap" data-go="list" data-seg="todo"><span class="h-sub" style="font-size:14px">할 일</span><span class="stat num">'+open.length+'개 남음</span><span class="bar"><i style="width:'+pct+'%"></i></span><span class="muted num" style="font-size:13px">'+done+'/'+S.todos.length+' 완료</span></button>'+
@@ -980,8 +980,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='9';
-var BUILT='2026년 10월 10일 오전 10:20';
+var APPV='10';
+var BUILT='2026년 10월 24일 오전 10:20';
 function save(){lsSet('mina-local',S)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c]});return JSON.stringify(o,null,1)}

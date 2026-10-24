@@ -460,7 +460,9 @@ var db=null, loaded=false;
 var KIND={birth:{label:'생일',cls:'k-birth',dot:'c-violet'},card:{label:'연회비',cls:'k-card',dot:'c-blue'},renew:{label:'갱신',cls:'k-renew',dot:'c-green'},etc:{label:'기념일',cls:'k-etc',dot:'c-orange'}};
 var TAGS=['아이디어','여행','읽을거리','기타'];
 var TAGCLS={'아이디어':'k-card','여행':'k-renew','읽을거리':'k-etc','기타':'k-birth'};
-var CATS=['마트','생활용품','온라인','기타'];
+var CATS_DEF=['마트','생활용품','온라인','기타'];
+function cats(){var c=(space&&Array.isArray(space.cats)&&space.cats.length)?space.cats:lsGet('mina-cats',null);return (Array.isArray(c)&&c.length?c:CATS_DEF).slice()}
+function curCat(){var c=cats();return c.indexOf(V.buyCat)>=0?V.buyCat:c[0]}
 var COLORS=[['blue','c-blue'],['green','c-green'],['orange','c-orange'],['violet','c-violet'],['red','c-red']];
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -736,7 +738,8 @@ function oursCard(title,rows,qid,ph){
 function buyV(){
   var html='';
   if(MODE==='me'){var sh=S.buys.filter(function(b){return b._sh}).sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(a.createdAt||0)-(b.createdAt||0)});html+=oursCard('남편과 같이 살 것',sh.map(buyRow).join(''),'q-buy-sh','같이 살 것을 입력하고 Enter')}
-  CATS.forEach(function(c){
+  var cl=cats();S.buys.forEach(function(b){var c=b.cat||'기타';if((MODE!=='me'||!b._sh)&&cl.indexOf(c)<0)cl.push(c)});
+  cl.forEach(function(c){
     var arr=S.buys.filter(function(b){return (b.cat||'기타')===c&&(MODE!=='me'||!b._sh)});if(!arr.length)return;
     arr.sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(a.createdAt||0)-(b.createdAt||0)});
     html+='<div class="card flush"><div class="group-label"><span>'+c+'</span><span class="num">'+arr.filter(function(b){return !b.done}).length+'개</span></div>'+
@@ -744,9 +747,9 @@ function buyV(){
   });
   if(!html)html='<div class="card"><div class="empty">살 것을 추가해 보세요</div></div>';
   var bought=S.buys.filter(function(b){return b.done}).length;
-  return html+'<div class="card"><div class="chips">'+CATS.map(function(c){return '<button class="chip soft" data-buycat="'+c+'" aria-pressed="'+((V.buyCat||'마트')===c)+'">'+c+'</button>'}).join('')+'</div>'+
-  '<div class="quick"><label for="q-buy" class="sr">살 것 추가</label><input id="q-buy" placeholder="'+esc(V.buyCat||'마트')+'에서 살 것 입력하고 Enter" autocomplete="off"><button class="btn small" data-act="q-buy">추가</button></div>'+
-  (bought?'<button class="btn ghost small" data-act="clear-bought">산 것 '+bought+'개 정리하기</button>':'')+'</div>';
+  return html+'<div class="card"><div class="chips">'+cats().map(function(c){return '<button class="chip soft" data-buycat="'+esc(c)+'" aria-pressed="'+(curCat()===c)+'">'+esc(c)+'</button>'}).join('')+'</div>'+
+  '<div class="quick"><label for="q-buy" class="sr">살 것 추가</label><input id="q-buy" placeholder="'+esc(curCat())+'에서 살 것 입력하고 Enter" autocomplete="off"><button class="btn small" data-act="q-buy">추가</button></div>'+
+  (bought?'<button class="btn ghost small" data-act="clear-bought">산 것 '+bought+'개 정리하기</button>':'')+'<button class="textlink" data-act="edit-cats">카테고리 편집</button></div>';
 }
 
 /* 메모 */
@@ -816,7 +819,7 @@ function drawSheet(){
     h='<h2>'+(d.id?'살 것 수정':'살 것 추가')+'</h2>'+
     '<div class="field"><label for="f-btext">이름</label><input class="inp" id="f-btext" data-f="text" value="'+esc(d.text)+'" placeholder="예: 우유" data-autofocus></div>'+
     '<div class="field"><label for="f-bnote">수량 · 메모</label><input class="inp" id="f-bnote" data-f="note" value="'+esc(d.note)+'" placeholder="예: 2개, 저지방"></div>'+
-    '<div class="field"><span class="lab">어디서</span>'+chipsH('cat',CATS.map(function(c){return [c,c]}),d.cat||'마트')+'</div>'+
+    '<div class="field"><span class="lab">어디서</span>'+chipsH('cat',cats().map(function(c){return [esc(c),esc(c)]}),d.cat||curCat())+'</div>'+
     shareH(d)+footer(!!d.id,(d.text||'').trim());
   } else if(k==='routine'){
     var dd='';for(var q=1;q<=31;q++)dd+='<option value="'+q+'"'+(+d.mday===q?' selected':'')+'>'+(q===31?'말일':q+'일')+'</option>';
@@ -858,6 +861,10 @@ function drawSheet(){
     (d.kind==='card'?'<div class="field"><label for="f-amt">연회비 (원)</label><input class="inp num" id="f-amt" data-f="amount" inputmode="numeric" value="'+(d.amount||'')+'" placeholder="예: 30000"></div>':'')+
     (lunar?'<div class="preview" id="pv">'+previewH(d)+'</div>':'')+
     footer(!!d.id,(d.name||'').trim());
+  } else if(k==='cats'){
+    h='<h2>살 것 카테고리</h2><p class="fine">이름을 바꾸면 그 카테고리에 있던 살 것도 같이 옮겨져요.'+(spaceId()?(MODE==='me'?' 남편 앱':' 미나님 앱')+' 카테고리도 똑같이 바뀌어요.':'')+'</p>'+
+    '<div class="items">'+(d.items||[]).map(function(it,i){return '<div class="irow"><span class="bul"></span><label for="it-'+i+'" class="sr">카테고리 '+(i+1)+'</label><input class="inp" id="it-'+i+'" data-item="'+i+'" value="'+esc(it.t)+'" placeholder="카테고리 이름" autocomplete="off"><button type="button" class="iconbtn" data-act="item-del" data-i="'+i+'" aria-label="카테고리 삭제">×</button></div>'}).join('')+'<button type="button" class="textlink" data-act="item-add">+ 카테고리 추가</button></div>'+
+    '<p class="fine">지운 카테고리에 있던 살 것은 목록 아래쪽에 그대로 남아 있어요.</p>'+footer(false,true);
   } else if(k==='settings'){
     var lb=lsGet('mina-lastbackup',0),cnt=0;COLS.forEach(function(c){cnt+=S[c].length});
     var hasSample=COLS.some(function(c){return S[c].some(function(x){return x.sample})});
@@ -901,6 +908,7 @@ function setField(name,v){
 function saveSheet(){
   if(form.kind==='settings'){var ae=document.activeElement;if(ae&&ae.id==='f-code'){joinSpace(ae.value);return}if(!user&&emailOpen)emailAuth(false);return}
   var d=form.d,k=form.kind,now=Date.now();
+  if(k==='cats'){saveCats(d.items||[]);return}
   if(k==='event'||k==='todo'||k==='buy'||k==='routine'){
     var sh=MODE==='us'?true:!!d._sh;
     if(sh&&!spaceId()){toast(MODE==='us'?'먼저 설정에서 연결해 주세요':'남편과 연결되어 있지 않아요');return}
@@ -910,7 +918,7 @@ function saveSheet(){
   }
   if(k==='event'){if(!(d.title||'').trim()||!d.date)return;put('events',{id:d.id||uid(),title:d.title.trim(),date:d.date,time:d.time||'',repeat:d.repeat||'none',color:d.color||'blue',sample:d.sample||undefined});cal.sel=d.date;var p=parse(d.date);cal.y=p.y;cal.m=p.m}
   if(k==='todo'){if(!(d.text||'').trim())return;put('todos',{id:d.id||uid(),text:d.text.trim(),due:d.due||'',note:(d.note||'').trim(),important:!!d.important,done:!!d.done,createdAt:d.createdAt||now,doneAt:d.doneAt||0,sample:d.sample||undefined})}
-  if(k==='buy'){if(!(d.text||'').trim())return;put('buys',{id:d.id||uid(),text:d.text.trim(),note:(d.note||'').trim(),cat:d.cat||'마트',done:!!d.done,createdAt:d.createdAt||now,sample:d.sample||undefined})}
+  if(k==='buy'){if(!(d.text||'').trim())return;put('buys',{id:d.id||uid(),text:d.text.trim(),note:(d.note||'').trim(),cat:d.cat||curCat(),done:!!d.done,createdAt:d.createdAt||now,sample:d.sample||undefined})}
   if(k==='memo'){if(!memoOk(d))return;var mo=d.mode||'text';put('memos',{id:d.id||uid(),title:(d.title||'').trim(),body:mo==='text'?(d.body||'').trim():'',mode:mo,items:mo==='text'?[]:(d.items||[]).filter(function(x){return (x.t||'').trim()}).map(function(x){return {t:x.t.trim(),done:!!x.done}}),tag:d.tag||'아이디어',pinned:!!d.pinned,updatedAt:now,sample:d.sample||undefined})}
   if(k==='routine'){if(!(d.name||'').trim())return;if(d.mode==='weekly'&&!(d.days||[]).length){toast('요일을 하나 이상 골라주세요');return}put('routines',{id:d.id||uid(),name:d.name.trim(),mode:d.mode,every:Math.max(1,+d.every||7),days:(d.days||[]).map(Number),mday:+d.mday||1,ym:+d.ym||1,yd:+d.yd||1,amount:d.mode==='yearly'&&+String(d.amount||'').replace(/[^0-9]/g,'')?+String(d.amount).replace(/[^0-9]/g,''):undefined,mtype:d.mode==='monthly'?(d.mtype||'nth'):undefined,nth:+d.nth||1,mwd:d.mwd!=null&&d.mwd!==''?+d.mwd:1,weeks:d.mode==='weekly'?(+d.weeks||1):1,anchor:d.anchor||monOf(TODAY),last:d.last||'',prev:d.prev||'',since:d.since||TODAY,createdAt:d.createdAt||now,sample:d.sample||undefined})}
   if(k==='annual'){if(!(d.name||'').trim())return;var it={id:d.id||uid(),name:d.name.trim(),kind:d.kind,cal:(d.kind==='birth'&&d.cal==='lunar')?'lunar':'solar',m:+d.m,d:+d.d,sample:d.sample||undefined};if(d.kind==='card'&&+d.amount)it.amount=+d.amount;put('annual',it)}
@@ -949,7 +957,7 @@ sheet.addEventListener('keydown',function(e){
   e.preventDefault();var i=+e.target.dataset.item;form.d.items.splice(i+1,0,{t:'',done:false});drawSheetKeep();focusItem(i+1);
 });
 sheet.addEventListener('input',function(e){
-  if(e.target.dataset.item!=null&&form&&form.d.items){form.d.items[+e.target.dataset.item].t=e.target.value;var sb=sheet.querySelector('button[type="submit"]');if(sb)sb.disabled=!memoOk(form.d);return}
+  if(e.target.dataset.item!=null&&form&&form.d.items){form.d.items[+e.target.dataset.item].t=e.target.value;var sb=sheet.querySelector('button[type="submit"]');if(sb)sb.disabled=form.kind==='memo'?!memoOk(form.d):false;return}
   var f=e.target.dataset.f;if(!f)return;setField(f,e.target.value);
   if(form.kind==='routine'&&(f==='every'||f==='last')){if(f==='every')sheet.querySelectorAll('[data-f="every"][data-v]').forEach(function(c){c.setAttribute('aria-pressed',String(c.dataset.v===e.target.value))});var pl=sheet.querySelector('.preview .pl');if(pl){var x=rtDue({mode:form.d.mode,every:form.d.every,last:form.d.last,since:form.d.since||TODAY});pl.textContent='다음 할 날: '+(x<=TODAY?'오늘':md(x))}var ph=sheet.querySelector('.preview .ph');if(ph)ph.textContent=rtFreq(form.d)}
   if(form.kind==='todo'&&f==='due'){sheet.querySelectorAll('[data-f="due"][data-v]').forEach(function(c){c.setAttribute('aria-pressed',String(c.dataset.v===e.target.value))})}
@@ -1001,6 +1009,7 @@ document.addEventListener('click',function(e){
   if(a==='q-todo-sh')quickTodo(true);
   if(a==='q-buy-sh')quickBuy(true);
   if(a==='go-settings')openSheet('settings',{});
+  if(a==='edit-cats')openSheet('cats',{items:cats().map(function(c){return {t:c,o:c}})});
   if(a==='clear-sample')clearSamples();
   if(a==='settings')openSheet('settings',{});
 });
@@ -1017,12 +1026,12 @@ function val(id){var el=document.getElementById(id);var v=el?el.value.trim():'';
 function quickEv(){var v=val('q-ev');if(!v)return;var m=v.match(/^(\d{1,2}):?(\d{2})\s+(.+)$/);put('events',m?{id:uid(),title:m[3],date:cal.sel,time:pad(+m[1])+':'+m[2],repeat:'none',color:'blue'}:{id:uid(),title:v,date:cal.sel,time:'',repeat:'none',color:'blue'});toast('일정을 추가했어요')}
 function shf(o,sh){if(sh){o._sh=true;o.by=user?user.uid:''}return o}
 function quickTodo(sh){var v=val(sh?'q-todo-sh':'q-todo');if(!v)return;put('todos',shf({id:uid(),text:v,due:'',note:'',important:false,done:false,createdAt:Date.now(),doneAt:0},sh))}
-function quickBuy(sh){var v=val(sh?'q-buy-sh':'q-buy');if(!v)return;put('buys',shf({id:uid(),text:v,note:'',cat:V.buyCat||'마트',done:false,createdAt:Date.now()},sh))}
+function quickBuy(sh){var v=val(sh?'q-buy-sh':'q-buy');if(!v)return;put('buys',shf({id:uid(),text:v,note:'',cat:curCat(),done:false,createdAt:Date.now()},sh))}
 function newFor(kind){
   if(MODE==='us'&&!spaceId()){openSheet('settings',{});toast('먼저 로그인하고 연결 코드를 넣어주세요');return}
   if(kind==='event')openSheet('event',{title:'',date:cal.sel||TODAY,time:'',repeat:'none',color:'blue'});
   if(kind==='todo')openSheet('todo',{text:'',due:TODAY,note:'',important:false});
-  if(kind==='buy')openSheet('buy',{text:'',note:'',cat:V.buyCat||'마트'});
+  if(kind==='buy')openSheet('buy',{text:'',note:'',cat:curCat()});
   if(kind==='memo')openSheet('memo',{title:'',body:'',tag:'아이디어',pinned:false,mode:'text',items:[]});
   if(kind==='annual')openSheet('annual',{name:'',kind:'birth',cal:'solar',m:'1',d:'1',amount:''});
   if(kind==='routine'){var tp=parse(TODAY);openSheet('routine',{name:'',ym:String(tp.m),yd:String(tp.d),amount:'',mode:'weekly',weeks:'1',mtype:'nth',nth:'1',mwd:String(dow(tp.y,tp.m,tp.d)),anchor:monOf(TODAY),every:'7',days:[dow(tp.y,tp.m,tp.d)],mday:String(tp.d),last:''})}
@@ -1035,8 +1044,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='11';
-var BUILT='2026년 10월 24일 오전 11:00';
+var APPV='12';
+var BUILT='2026년 10월 24일 오전 11:15';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}
@@ -1114,6 +1123,7 @@ function startSync(){
   syncState='loading';
   var me=user;
   loadSpace();
+  if(MODE==='me')unsubs.push(fsdb.collection('users').doc(user.uid).collection('meta').doc('prefs').onSnapshot(function(d){if(d.exists&&Array.isArray(d.data().cats)){lsSet('mina-cats',d.data().cats);render()}},function(){}));
   if(MODE==='us'){syncState='on';return}
   migrateLocal().catch(function(){}).then(function(){
     if(user!==me)return;
@@ -1177,10 +1187,21 @@ function watchSpace(sid){
 }
 function genCode(){var A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',s='',r=new Uint32Array(8);crypto.getRandomValues(r);for(var i=0;i<8;i++)s+=A[r[i]%A.length];return s}
 function spErr(e){var c=(e&&e.code)||'';toast(c==='full'?'이미 두 사람이 연결된 코드예요':(c==='not-found'||c==='permission-denied')?'코드가 맞지 않아요. 다시 확인해 주세요. (Firebase 규칙을 새로 붙여넣었는지도 확인해 주세요)':'연결하지 못했어요. 인터넷 연결을 확인해 주세요')}
+function saveCats(items){
+  var list=[],seen={};items.forEach(function(x){var t=(x.t||'').trim();if(t&&!seen[t]){seen[t]=1;list.push(t)}});
+  if(!list.length){toast('카테고리를 하나 이상 남겨주세요');return}
+  items.forEach(function(x){var t=(x.t||'').trim();if(x.o&&t&&x.o!==t){S.buys.filter(function(b){return (b.cat||'기타')===x.o}).forEach(function(b){var nb=copy(b);nb.cat=t;put('buys',nb)})}});
+  lsSet('mina-cats',list);
+  if(fsdb&&user){if(MODE==='me')fsdb.collection('users').doc(user.uid).collection('meta').doc('prefs').set({cats:list}).catch(function(){});
+    if(spaceId())fsdb.collection('spaces').doc(spaceId()).update({cats:list}).catch(function(){})}
+  if(space)space.cats=list;
+  if(list.indexOf(V.buyCat)<0){V.buyCat=list[0];lsSet('mina-view',V)}
+  closeSheet();render();toast('카테고리를 바꿨어요');
+}
 function createSpace(){
   if(!user||!fsdb){toast('먼저 로그인해 주세요');return}
   var sid=genCode(),names={};names[user.uid]=myName()||'나';
-  fsdb.collection('spaces').doc(sid).set({members:[user.uid],names:names,createdAt:Date.now()})
+  fsdb.collection('spaces').doc(sid).set({members:[user.uid],names:names,cats:cats(),createdAt:Date.now()})
     .then(function(){return fsdb.collection('users').doc(user.uid).collection('meta').doc('space').set({sid:sid})})
     .then(function(){toast('공유 공간을 만들었어요. 코드를 보내주세요')}).catch(spErr);
 }

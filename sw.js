@@ -1,5 +1,5 @@
 /* 미나의 하루 / 우리 집 service worker: 화면 파일과 폰트·SDK만 캐시. 데이터(Firestore, 로그인) 요청은 통과. */
-const CACHE = 'mina-day-v12';
+const CACHE = 'mina-day-v13';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './apple-touch-icon.png?v=3',
                './us/', './us/index.html', './us/manifest.webmanifest', './us/icon-192.png?v=1', './us/apple-touch-icon.png?v=1'];
 const STATIC_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'www.gstatic.com', 'cdn.jsdelivr.net'];

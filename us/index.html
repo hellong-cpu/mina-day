@@ -472,20 +472,19 @@ function lsSet(k,v){if(MODE==='us')k='us-'+k;try{localStorage.setItem(k,JSON.str
 
 function put(col,item){
   if(form&&form.shx){var X=form.shx;if(X.sh){item._sh=true;item.by=X.by;if(X.doneBy)item.doneBy=X.doneBy}}
-  if(MODE==='us'&&!item._sh){item._sh=true;item.by=item.by||(user?user.uid:'')}
-  if(item._sh&&!spaceId()){toast(MODE==='us'?'먼저 설정에서 로그인하고 연결 코드를 넣어주세요':'남편과 연결되어 있지 않아요. 설정에서 연결해 주세요');return}
+  if(item._sh&&!spaceId()){toast(MODE==='us'?'아내와 연결되어 있지 않아요. 설정에서 연결 코드를 넣어주세요':'남편과 연결되어 있지 않아요. 설정에서 연결해 주세요');return}
   var arr=S[col].filter(function(x){return x.id!==item.id});arr.push(item);S[col]=arr;render();save();
   if(item._sh){if(fsdb&&user)spaceCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
-  else if(user&&fsdb&&MODE==='me'){cloudCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
+  else if(user&&fsdb){cloudCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
 }
 function del(col,id){
   var old=find(col,id);
   S[col]=S[col].filter(function(x){return x.id!==id});render();save();
   if(old&&old._sh){if(fsdb&&user&&spaceId())spaceCol(col).doc(id).delete().catch(dbFail)}
-  else if(user&&fsdb&&MODE==='me'){cloudCol(col).doc(id).delete().catch(dbFail)}
+  else if(user&&fsdb){cloudCol(col).doc(id).delete().catch(dbFail)}
 }
 function clean(o){var r={};for(var k in o)if(k!=='id'&&k!=='_sh'&&o[k]!==undefined)r[k]=o[k];return r}
-function tagFor(x){if(!x||!x._sh)return '';if(x.by&&user&&x.by!==user.uid)return '<span class="shtag">'+esc(nameOf(x.by))+'</span>';return MODE==='me'?'<span class="shtag">공유</span>':''}
+function tagFor(x){if(!x||!x._sh)return '';if(x.by&&user&&x.by!==user.uid)return '<span class="shtag">'+esc(nameOf(x.by))+'</span>';return '<span class="shtag">공유</span>'}
 function dbFail(e){toast(e&&e.code==='quota_exceeded'?'저장 공간이 가득 찼어요. 오래된 항목을 지워주세요.':'저장하지 못했어요. 잠시 후 다시 해주세요.')}
 
 /* ================= 화면 상태 ================= */
@@ -589,8 +588,8 @@ function toggleRt(id){
   put('routines',r);
 }
 function choreV(){
-  var ourR=MODE==='me'?S.routines.filter(function(r){return r._sh}).sort(function(a,b){return rtDue(a)<rtDue(b)?-1:1}):[];
-  var due=rtToday().filter(function(r){return MODE!=='me'||!r._sh}),rest=S.routines.filter(function(r){return MODE!=='me'||!r._sh}).filter(function(r){return due.indexOf(r)<0}).sort(function(a,b){return rtDue(a)<rtDue(b)?-1:1});
+  var ourR=S.routines.filter(function(r){return r._sh}).sort(function(a,b){return rtDue(a)<rtDue(b)?-1:1});
+  var due=rtToday().filter(function(r){return !r._sh}),rest=S.routines.filter(function(r){return !r._sh}).filter(function(r){return due.indexOf(r)<0}).sort(function(a,b){return rtDue(a)<rtDue(b)?-1:1});
   var body='';
   if(due.length)body+='<div class="group-label"><span>오늘 할 루틴</span><span class="num">'+due.filter(function(r){return r.last!==TODAY}).length+'</span></div>'+due.map(rtRow).join('');
   if(rest.length)body+='<div class="group-label"><span>다가오는 루틴</span><span class="num">'+rest.length+'</span></div>'+rest.map(rtRow).join('');
@@ -599,7 +598,7 @@ function choreV(){
   var board=S.routines.some(function(r){return r.mode==='weekly'})?'<div class="card flush"><div class="group-label"><span>요일별 루틴</span></div>'+[1,2,3,4,5,6,0].map(function(w){
     var rs=S.routines.filter(function(r){return r.mode==='weekly'&&(r.days||[]).indexOf(w)>=0});
     return '<div class="wkrow'+(w===tw?' on':'')+'"><span class="wk'+(w===0?' sun':'')+(w===6?' sat':'')+'">'+WD[w]+'</span><div class="wkitems">'+(rs.length?rs.map(function(r){return '<button class="wkchip" data-edit-rt="'+r.id+'">'+esc(r.name)+((+r.weeks||1)>=2?' <small class="muted">격주</small>':'')+'</button>'}).join(''):'<span class="wknone">쉬는 날</span>')+'</div></div>'}).join('')+'</div>':'';
-  return oursCard('남편과 같이 하는 루틴',ourR.map(rtRow).join(''),'','')+'<div class="card flush">'+body+'<div style="padding:10px 16px 12px"><button class="btn ghost small" data-act="new-rt" style="width:100%">+ 루틴 추가</button></div></div>'+board+
+  return oursCard((MODE==='me'?'남편':'아내')+'와 같이 하는 루틴',ourR.map(rtRow).join(''),'','')+'<div class="card flush">'+body+'<div style="padding:10px 16px 12px"><button class="btn ghost small" data-act="new-rt" style="width:100%">+ 루틴 추가</button></div></div>'+board+
   '<p class="fine" style="padding:0 6px">정해진 날이 되면 홈의 오늘의 루틴에 나타나요. 그날 못 했으면 다음 요일이 오기 전까지 밀린 일로 남아 있어요.</p>';
 }
 
@@ -653,7 +652,7 @@ function homeV(){
   var rts=rtToday();
   var choreCard=true?'<div class="card flush"><div class="card-title" style="padding:14px 20px 6px"><b>오늘의 루틴</b><button class="link" data-go="list" data-seg="chore">전체 ›</button></div>'+(rts.length?rts.map(rtRow).join(''):'<div class="empty" style="padding:4px 20px 14px">'+(S.routines.length?'오늘은 할 루틴이 없어요':'리스트 → 루틴에서 집안일이나 연회비를 추가해 보세요')+'</div>')+'</div>':'';
   var p=parse(TODAY);
-  var usNotice=MODE==='us'&&!spaceId()?'<div class="notice"><span>'+(user?'미나님에게 받은 연결 코드를 넣으면 공유한 일정과 목록이 보여요.':'로그인하고 미나님에게 받은 연결 코드를 넣어주세요.')+'</span><button data-act="go-settings">'+(user?'코드 넣기':'시작하기')+'</button></div>':'';
+  var usNotice=MODE==='us'&&!spaceId()?'<div class="notice"><span>'+(user?'아내에게 받은 연결 코드를 넣으면 아내와 일정과 목록을 같이 볼 수 있어요.':'로그인하고 아내에게 받은 연결 코드를 넣어주세요.')+'</span><button data-act="go-settings">'+(user?'코드 넣기':'시작하기')+'</button></div>':'';
   return usNotice+(MODE==='me'?sampleNotice():'')+
   '<div class="head-row"><div class="head"><span class="h-sub">'+greet+(MODE==='me'?', 미나님':(user?', '+esc(myName())+'님':''))+'</span><span class="h-big num">'+p.m+'월 '+p.d+'일 '+WD[dow(p.y,p.m,p.d)]+'요일</span></div><button class="iconbtn" data-act="settings" aria-label="설정과 백업">'+(user?'':'<i class="badge" aria-hidden="true"></i>')+'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>'+
   '<div class="home-grid"><div class="home-col">'+
@@ -719,29 +718,29 @@ function listV(){
   if(V.seg==='buy')return '<div class="row-head"><span class="h-page">리스트</span></div>'+seg+buyV();
   if(V.seg==='chore')return '<div class="row-head"><span class="h-page">리스트</span></div>'+seg+choreV();
   var open=S.todos.filter(function(t){return !t.done}).sort(todoSort),done=S.todos.filter(function(t){return t.done}).sort(function(a,b){return (b.doneAt||0)-(a.doneAt||0)});
-  var ours=MODE==='me'?open.filter(function(t){return t._sh}):[];
-  if(MODE==='me')open=open.filter(function(t){return !t._sh});
+  var ours=open.filter(function(t){return t._sh});
+  open=open.filter(function(t){return !t._sh});
   var groups=[['지난 일',function(t){return t.due&&diff(t.due)<0}],['오늘',function(t){return t.due&&diff(t.due)===0}],['다가오는 일',function(t){return t.due&&diff(t.due)>0}],['언젠가',function(t){return !t.due}]];
   var body='';
   groups.forEach(function(g){var arr=open.filter(g[1]);if(arr.length)body+='<div class="group-label"><span>'+g[0]+'</span><span class="num">'+arr.length+'</span></div>'+arr.map(todoRow).join('')});
   if(!open.length)body='<div class="empty" style="padding:18px 20px">남은 할 일이 없어요</div>';
   return '<div class="row-head"><span class="h-page">리스트</span></div>'+seg+
-  oursCard('남편과 함께 할 일',ours.map(todoRow).join(''),'q-todo-sh','같이 할 일을 입력하고 Enter')+
-  '<div class="card flush">'+(MODE==='me'&&spaceId()?'<div class="group-label"><span>나만 보는 할 일</span></div>':'')+body+'<div class="quick" style="margin:8px 16px"><label for="q-todo" class="sr">할 일 추가</label><input id="q-todo" placeholder="할 일을 입력하고 Enter" autocomplete="off"><button class="btn small" data-act="q-todo">추가</button></div></div>'+
+  oursCard((MODE==='me'?'남편':'아내')+'와 함께 할 일',ours.map(todoRow).join(''),'q-todo-sh','같이 할 일을 입력하고 Enter')+
+  '<div class="card flush">'+(spaceId()?'<div class="group-label"><span>나만 보는 할 일</span></div>':'')+body+'<div class="quick" style="margin:8px 16px"><label for="q-todo" class="sr">할 일 추가</label><input id="q-todo" placeholder="할 일을 입력하고 Enter" autocomplete="off"><button class="btn small" data-act="q-todo">추가</button></div></div>'+
   (done.length?'<div class="card flush"><button class="group-label" data-act="toggle-done" style="width:100%;padding-bottom:12px"><span>완료 '+done.length+'</span><span>'+(showDone?'접기':'펼치기')+'</span></button>'+(showDone?done.map(todoRow).join('')+'<button class="btn ghost small" data-act="clear-done" style="margin:8px 16px 8px">완료한 일 지우기</button>':'')+'</div>':'');
 }
-function buyRow(b){return '<div class="item'+(b.done?' done':'')+'"><button class="check sq'+(b.done?' on':'')+'" data-toggle-buy="'+b.id+'" aria-label="'+(b.done?'구매 취소':'샀어요')+'">'+ICON_CHECK+'</button><button class="txt" data-edit-buy="'+b.id+'"><b>'+esc(b.text)+tagFor(b)+'</b>'+((b.note||b._sh)?'<small>'+esc([b._sh&&MODE==='me'?b.cat:'',b.note].filter(Boolean).join(' · '))+'</small>':'')+'</button></div>'}
+function buyRow(b){return '<div class="item'+(b.done?' done':'')+'"><button class="check sq'+(b.done?' on':'')+'" data-toggle-buy="'+b.id+'" aria-label="'+(b.done?'구매 취소':'샀어요')+'">'+ICON_CHECK+'</button><button class="txt" data-edit-buy="'+b.id+'"><b>'+esc(b.text)+tagFor(b)+'</b>'+((b.note||b._sh)?'<small>'+esc([b._sh?b.cat:'',b.note].filter(Boolean).join(' · '))+'</small>':'')+'</button></div>'}
 function oursCard(title,rows,qid,ph){
-  if(MODE!=='me'||!spaceId())return '';
-  return '<div class="card flush"><div class="group-label"><span class="ours-head"><i></i>'+title+'</span></div>'+(rows||'<div class="empty" style="padding:6px 20px 8px">아직 없어요. 여기서 추가하면 남편 앱에도 바로 떠요.</div>')+
+  if(!spaceId())return '';
+  return '<div class="card flush"><div class="group-label"><span class="ours-head"><i></i>'+title+'</span></div>'+(rows||'<div class="empty" style="padding:6px 20px 8px">아직 없어요. 여기서 추가하면 '+(MODE==='me'?'남편':'아내')+' 앱에도 바로 떠요.</div>')+
     (qid?'<div class="quick" style="margin:8px 16px"><label for="'+qid+'" class="sr">'+title+' 추가</label><input id="'+qid+'" placeholder="'+ph+'" autocomplete="off"><button class="btn small" data-act="'+qid+'">추가</button></div>':'')+'</div>';
 }
 function buyV(){
   var html='';
-  if(MODE==='me'){var sh=S.buys.filter(function(b){return b._sh}).sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(a.createdAt||0)-(b.createdAt||0)});html+=oursCard('남편과 같이 살 것',sh.map(buyRow).join(''),'q-buy-sh','같이 살 것을 입력하고 Enter')}
-  var cl=cats();S.buys.forEach(function(b){var c=b.cat||'기타';if((MODE!=='me'||!b._sh)&&cl.indexOf(c)<0)cl.push(c)});
+  {var sh=S.buys.filter(function(b){return b._sh}).sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(a.createdAt||0)-(b.createdAt||0)});html+=oursCard((MODE==='me'?'남편':'아내')+'와 같이 살 것',sh.map(buyRow).join(''),'q-buy-sh','같이 살 것을 입력하고 Enter')}
+  var cl=cats();S.buys.forEach(function(b){var c=b.cat||'기타';if(!b._sh&&cl.indexOf(c)<0)cl.push(c)});
   cl.forEach(function(c){
-    var arr=S.buys.filter(function(b){return (b.cat||'기타')===c&&(MODE!=='me'||!b._sh)});if(!arr.length)return;
+    var arr=S.buys.filter(function(b){return (b.cat||'기타')===c&&!b._sh});if(!arr.length)return;
     arr.sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(a.createdAt||0)-(b.createdAt||0)});
     html+='<div class="card flush"><div class="group-label"><span>'+c+'</span><span class="num">'+arr.filter(function(b){return !b.done}).length+'개</span></div>'+
       arr.map(buyRow).join('')+'</div>';
@@ -863,7 +862,7 @@ function drawSheet(){
     (lunar?'<div class="preview" id="pv">'+previewH(d)+'</div>':'')+
     footer(!!d.id,(d.name||'').trim());
   } else if(k==='cats'){
-    h='<h2>살 것 카테고리</h2><p class="fine">이름을 바꾸면 그 카테고리에 있던 살 것도 같이 옮겨져요.'+(spaceId()?(MODE==='me'?' 남편 앱':' 미나님 앱')+' 카테고리도 똑같이 바뀌어요.':'')+'</p>'+
+    h='<h2>살 것 카테고리</h2><p class="fine">이름을 바꾸면 그 카테고리에 있던 살 것도 같이 옮겨져요.'+(spaceId()?(MODE==='me'?' 남편 앱':' 아내 앱')+' 카테고리도 똑같이 바뀌어요.':'')+'</p>'+
     '<div class="items">'+(d.items||[]).map(function(it,i){return '<div class="irow"><span class="bul"></span><label for="it-'+i+'" class="sr">카테고리 '+(i+1)+'</label><input class="inp" id="it-'+i+'" data-item="'+i+'" value="'+esc(it.t)+'" placeholder="카테고리 이름" autocomplete="off"><button type="button" class="iconbtn" data-act="item-del" data-i="'+i+'" aria-label="카테고리 삭제">×</button></div>'}).join('')+'<button type="button" class="textlink" data-act="item-add">+ 카테고리 추가</button></div>'+
     '<p class="fine">지운 카테고리에 있던 살 것은 목록 아래쪽에 그대로 남아 있어요.</p>'+footer(false,true);
   } else if(k==='settings'){
@@ -890,9 +889,8 @@ function previewH(d){
   return '<span class="ph">'+head+'</span>'+(list.length?list.map(function(s){var p=parse(s),n=diff(s);return '<span class="pl num">'+p.y+'년 '+md(s)+' · '+ddayLabel(n)+'</span>'}).join(''):'<span class="pl">이 날짜가 없는 해예요. 다른 날을 골라주세요.</span>');
 }
 function shareH(d){
-  if(MODE!=='me')return d.by&&user&&d.by!==user.uid?'<p class="fine">'+esc(nameOf(d.by))+'님이 추가했어요</p>':'';
   if(!spaceId()&&!d._sh)return '';
-  return '<div class="field"><span class="lab">공유</span>'+segH('_sh',[['false','나만 보기'],['true','남편과 공유']],!!d._sh)+'</div>'+(d._sh&&d.by&&user&&d.by!==user.uid?'<p class="fine">'+esc(nameOf(d.by))+'이(가) 추가했어요</p>':'');
+  return '<div class="field"><span class="lab">공유</span>'+segH('_sh',MODE==='me'?[['false','나만 보기'],['true','남편과 공유']]:[['true','아내와 공유'],['false','나만 보기']],!!d._sh)+'</div>'+(d._sh&&d.by&&user&&d.by!==user.uid?'<p class="fine">'+esc(nameOf(d.by))+'이(가) 추가했어요</p>':'');
 }
 function memoOk(d){return ((d.title||'')+((d.mode||'text')==='text'?(d.body||''):(d.items||[]).map(function(x){return x.t}).join(''))).trim()}
 function setField(name,v){
@@ -911,8 +909,8 @@ function saveSheet(){
   var d=form.d,k=form.kind,now=Date.now();
   if(k==='cats'){saveCats(d.items||[]);return}
   if(k==='event'||k==='todo'||k==='buy'||k==='routine'){
-    var sh=MODE==='us'?true:!!d._sh;
-    if(sh&&!spaceId()){toast(MODE==='us'?'먼저 설정에서 연결해 주세요':'남편과 연결되어 있지 않아요');return}
+    var sh=!!d._sh;
+    if(sh&&!spaceId()){toast(MODE==='us'?'아내와 연결되어 있지 않아요':'남편과 연결되어 있지 않아요');return}
     var orig=d.id&&find(COLMAP[k],d.id);
     if(orig&&!!orig._sh!==sh){del(COLMAP[k],d.id)}
     form.shx={sh:sh,by:d.by||(user?user.uid:''),doneBy:d.doneBy||''};
@@ -1024,18 +1022,18 @@ view.addEventListener('keydown',function(e){
 });
 view.addEventListener('input',function(e){if(e.target.id==='q-memo'){memoQuery=e.target.value;render()}});
 function val(id){var el=document.getElementById(id);var v=el?el.value.trim():'';if(el)el.value='';return v}
-function quickEv(){var v=val('q-ev');if(!v)return;var m=v.match(/^(\d{1,2}):?(\d{2})\s+(.+)$/);put('events',m?{id:uid(),title:m[3],date:cal.sel,time:pad(+m[1])+':'+m[2],repeat:'none',color:'blue'}:{id:uid(),title:v,date:cal.sel,time:'',repeat:'none',color:'blue'});toast('일정을 추가했어요')}
+function quickEv(){var v=val('q-ev');if(!v)return;var m=v.match(/^(\d{1,2}):?(\d{2})\s+(.+)$/);var ush=MODE==='us'&&!!spaceId();put('events',shf(m?{id:uid(),title:m[3],date:cal.sel,time:pad(+m[1])+':'+m[2],repeat:'none',color:'blue'}:{id:uid(),title:v,date:cal.sel,time:'',repeat:'none',color:'blue'},ush));toast('일정을 추가했어요')}
 function shf(o,sh){if(sh){o._sh=true;o.by=user?user.uid:''}return o}
 function quickTodo(sh){var v=val(sh?'q-todo-sh':'q-todo');if(!v)return;put('todos',shf({id:uid(),text:v,due:'',note:'',important:false,done:false,createdAt:Date.now(),doneAt:0},sh))}
 function quickBuy(sh){var v=val(sh?'q-buy-sh':'q-buy');if(!v)return;put('buys',shf({id:uid(),text:v,note:'',cat:curCat(),done:false,createdAt:Date.now()},sh))}
 function newFor(kind){
-  if(MODE==='us'&&!spaceId()){openSheet('settings',{});toast('먼저 로그인하고 연결 코드를 넣어주세요');return}
-  if(kind==='event')openSheet('event',{title:'',date:cal.sel||TODAY,time:'',repeat:'none',color:'blue'});
-  if(kind==='todo')openSheet('todo',{text:'',due:TODAY,note:'',important:false});
-  if(kind==='buy')openSheet('buy',{text:'',note:'',cat:curCat()});
+  var dsh=MODE==='us'&&!!spaceId();
+  if(kind==='event')openSheet('event',{title:'',date:cal.sel||TODAY,time:'',repeat:'none',color:'blue',_sh:dsh});
+  if(kind==='todo')openSheet('todo',{text:'',due:TODAY,note:'',important:false,_sh:dsh});
+  if(kind==='buy')openSheet('buy',{text:'',note:'',cat:curCat(),_sh:dsh});
   if(kind==='memo')openSheet('memo',{title:'',body:'',tag:'아이디어',pinned:false,mode:'text',items:[]});
   if(kind==='annual')openSheet('annual',{name:'',kind:'birth',cal:'solar',m:'1',d:'1',amount:''});
-  if(kind==='routine'){var tp=parse(TODAY);openSheet('routine',{name:'',ym:String(tp.m),yd:String(tp.d),amount:'',mode:'weekly',weeks:'1',mtype:'nth',nth:'1',mwd:String(dow(tp.y,tp.m,tp.d)),anchor:monOf(TODAY),every:'7',days:[dow(tp.y,tp.m,tp.d)],mday:String(tp.d),last:''})}
+  if(kind==='routine'){var tp=parse(TODAY);openSheet('routine',{_sh:dsh,name:'',ym:String(tp.m),yd:String(tp.d),amount:'',mode:'weekly',weeks:'1',mtype:'nth',nth:'1',mwd:String(dow(tp.y,tp.m,tp.d)),anchor:monOf(TODAY),every:'7',days:[dow(tp.y,tp.m,tp.d)],mday:String(tp.d),last:''})}
 }
 document.getElementById('fab').addEventListener('click',function(){
   newFor({home:'todo',cal:'event',list:V.seg==='buy'?'buy':(V.seg==='chore'?'routine':'todo'),memo:'memo',year:'annual'}[V.tab]||'todo');
@@ -1045,8 +1043,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='12';
-var BUILT='2026년 10월 24일 오전 11:15';
+var APPV='13';
+var BUILT='2026년 10월 24일 오전 11:20';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}
@@ -1083,7 +1081,7 @@ function syncH(){
     var st={on:['on','실시간으로 맞춰지는 중'],loading:['','불러오는 중…'],error:['err','연결에 문제가 있어요. 잠시 후 다시 열어주세요.']}[syncState]||['','연결 중…'];
     return '<div class="sync"><b>'+(MODE==='me'?'폰·PC 연동 켜짐':'로그인됨')+'</b><div class="who"><span>'+esc(user.email||'로그인됨')+'<br><span class="st '+st[0]+'"><i></i>'+st[1]+'</span></span><button type="button" class="btn ghost small" data-act="logout">로그아웃</button></div></div>';
   }
-  return '<div class="sync"><b>'+(MODE==='me'?'폰·PC 연동':'로그인')+'</b><span class="fine">'+(MODE==='me'?'폰과 PC에서 같은 계정으로 로그인하면 실시간으로 똑같이 맞춰져요. 지금 이 기기에 있는 내용은 첫 로그인 때 자동으로 옮겨져요.':'로그인한 다음 미나님에게 받은 연결 코드를 넣으면 공유한 일정, 할 일, 살 것, 루틴이 보여요.')+'</span>'+
+  return '<div class="sync"><b>'+(MODE==='me'?'폰·PC 연동':'로그인')+'</b><span class="fine">'+(MODE==='me'?'폰과 PC에서 같은 계정으로 로그인하면 실시간으로 똑같이 맞춰져요. 지금 이 기기에 있는 내용은 첫 로그인 때 자동으로 옮겨져요.':'로그인하면 폰과 PC에서 같은 내용을 볼 수 있어요. 그다음 아내에게 받은 연결 코드를 넣으면 아내와 공유할 수 있어요.')+'</span>'+
     '<button type="button" class="btn google" data-act="login-google">Google로 로그인</button>'+
     (emailOpen?'<div class="field"><label for="f-email">이메일</label><input class="inp" type="email" id="f-email" autocomplete="email" inputmode="email"></div><div class="field"><label for="f-pw">비밀번호 (6자 이상)</label><input class="inp" type="password" id="f-pw" autocomplete="current-password"></div><div class="actions"><button type="button" class="btn ghost" data-act="email-signup">처음이에요</button><button type="button" class="btn" data-act="email-login">로그인</button></div>':'<button type="button" class="textlink" data-act="toggle-email">구글 로그인이 안 되면 이메일로 로그인</button>')+
   '</div>';
@@ -1125,7 +1123,6 @@ function startSync(){
   var me=user;
   loadSpace();
   if(MODE==='me')unsubs.push(fsdb.collection('users').doc(user.uid).collection('meta').doc('prefs').onSnapshot(function(d){if(d.exists&&Array.isArray(d.data().cats)){lsSet('mina-cats',d.data().cats);render()}},function(){}));
-  if(MODE==='us'){syncState='on';return}
   migrateLocal().catch(function(){}).then(function(){
     if(user!==me)return;
     COLS.forEach(function(c){
@@ -1159,7 +1156,7 @@ var SHC=['events','todos','buys','routines'],space=null,spUnsubs=[],metaUnsub=nu
 function spaceId(){return (space&&space.id)||lsGet('mina-sid','')}
 function spaceCol(c){return fsdb.collection('spaces').doc(spaceId()).collection(c)}
 function myName(){if(!user)return '';var n=(user.displayName||'').trim();if(n)return n.split(/\s+/)[0];return (user.email||'').split('@')[0]}
-function nameOf(uid){if(user&&uid===user.uid)return '나';return (space&&space.names&&space.names[uid])||(MODE==='me'?'남편':'미나')}
+function nameOf(uid){if(user&&uid===user.uid)return '나';return (space&&space.names&&space.names[uid])||(MODE==='me'?'남편':'아내')}
 function redrawSettings(){if(form&&form.kind==='settings')drawSheetKeep()}
 function clearShared(){COLS.forEach(function(c){S[c]=S[c].filter(function(x){return !x._sh})});lsSet('mina-sid','');save();render()}
 function stopSpace(){spUnsubs.forEach(function(f){try{f()}catch(e){}});spUnsubs=[];if(metaUnsub){try{metaUnsub()}catch(e){}metaUnsub=null}}
@@ -1230,16 +1227,16 @@ function copyInvite(){
 }
 function spaceH(){
   if(!cloudReady)return '';
-  var title=MODE==='me'?'남편과 공유':'미나님과 연결';
+  var title=MODE==='me'?'남편과 공유':'아내와 공유';
   if(!user)return '<div class="sync"><b>'+title+'</b><span class="fine">위에서 먼저 로그인해 주세요.</span></div>';
   var joinUI='<div class="field"><label for="f-code">연결 코드 8자리</label><input class="inp num" id="f-code" autocomplete="off" autocapitalize="characters" placeholder="예: K7M2QX9A" style="letter-spacing:.12em"></div><button type="button" class="btn" data-act="sp-join">코드로 연결</button>';
   if(!space){
     if(spaceId())return '<div class="sync"><b>'+title+'</b><span class="fine">연결 정보를 불러오는 중이에요…</span></div>';
-    return '<div class="sync"><b>'+title+'</b>'+(MODE==='me'?'<span class="fine">공유 공간을 만들고 코드를 남편에게 보내면, 남편 앱(우리 집)과 일정·할 일·살 것·루틴을 같이 볼 수 있어요.</span><button type="button" class="btn google" data-act="sp-create">공유 공간 만들기</button><span class="fine" style="text-align:center">또는 받은 코드가 있으면</span>':'<span class="fine">미나님 앱의 설정 → 남편과 공유에 있는 코드를 넣어주세요.</span>')+joinUI+'</div>';
+    return '<div class="sync"><b>'+title+'</b>'+(MODE==='me'?'<span class="fine">공유 공간을 만들고 코드를 남편에게 보내면, 남편 앱(우리 집)과 일정·할 일·살 것·루틴을 같이 볼 수 있어요.</span><button type="button" class="btn google" data-act="sp-create">공유 공간 만들기</button><span class="fine" style="text-align:center">또는 받은 코드가 있으면</span>':'<span class="fine">아내 앱의 설정 → 남편과 공유에 있는 8자리 코드를 넣어주세요.</span>')+joinUI+'</div>';
   }
   var others=(space.members||[]).filter(function(u){return u!==user.uid});
   if(!others.length)return '<div class="sync"><b>'+title+' · 연결 기다리는 중</b><span class="fine">'+(MODE==='me'?'남편 폰에서 아래 주소를 열고 로그인한 다음, 이 코드를 넣으면 연결돼요.':'상대방이 이 코드를 넣으면 연결돼요.')+'</span><div class="codebox">'+esc(space.id)+'</div>'+(MODE==='me'?'<span class="urlline">'+US_URL+'</span>':'')+'<div class="sp-actions"><button type="button" class="btn" data-act="sp-copy">주소와 코드 복사</button></div><button type="button" class="textlink" data-act="sp-leave">'+(spArmed?'한 번 더 누르면 공간을 지워요':'공유 공간 지우기')+'</button></div>';
-  return '<div class="sync"><b>'+title+' · 연결됨</b><div class="who"><span>'+esc(nameOf(others[0]))+'님과 연결되어 있어요<br><span class="st on"><i></i>실시간으로 맞춰지는 중</span></span></div><span class="fine">'+(MODE==='me'?'일정·할 일·살 것·루틴을 만들 때 "남편과 공유"를 고르면 남편 앱에 떠요.':'여기서 추가한 것은 모두 미나님 앱에도 떠요.')+'</span><button type="button" class="textlink" data-act="sp-leave">'+(spArmed?'한 번 더 누르면 연결을 끊어요':'연결 끊기')+'</button></div>';
+  return '<div class="sync"><b>'+title+' · 연결됨</b><div class="who"><span>'+esc(nameOf(others[0]))+'님과 연결되어 있어요<br><span class="st on"><i></i>실시간으로 맞춰지는 중</span></span></div><span class="fine">'+(MODE==='me'?'일정·할 일·살 것·루틴을 만들 때 "남편과 공유"를 고르면 남편 앱에 떠요.':'새로 만드는 일정·할 일·살 것·루틴은 기본으로 아내와 공유돼요. 혼자 볼 것은 "나만 보기"를 고르세요.')+'</span><button type="button" class="textlink" data-act="sp-leave">'+(spArmed?'한 번 더 누르면 연결을 끊어요':'연결 끊기')+'</button></div>';
 }
 function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function loadFirebase(){

@@ -1237,8 +1237,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='17';
-var BUILT='2026년 11월 2일 오후 5:30';
+var APPV='18';
+var BUILT='2026년 11월 2일 오후 7:00';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}
@@ -1414,9 +1414,9 @@ function leaveSpace(){
     .then(function(){return fsdb.collection('users').doc(user.uid).collection('meta').doc('space').delete()})
     .then(function(){stopSpace();space=null;clearShared();loadSpace();toast('연결을 끊었어요');redrawSettings()});
 }
-var US_URL='https://hellong-cpu.github.io/mina-day/us/';
+var US_URL='https://hellong-cpu.github.io/jeremina2026/';
 function copyInvite(){
-  var txt=MODE==='me'?('우리 집 앱: '+US_URL+'\n로그인 후 연결 코드: '+spaceId()):spaceId();
+  var txt=MODE==='me'?('Jeremina 앱: '+US_URL+'\n로그인 후 연결 코드: '+spaceId()):spaceId();
   try{navigator.clipboard.writeText(txt).then(function(){toast('복사했어요. 남편에게 보내주세요')},function(){toast('복사가 안 돼요. 코드를 직접 보내주세요: '+spaceId())})}catch(e){toast('코드: '+spaceId())}
 }
 function spaceH(){
@@ -1426,7 +1426,7 @@ function spaceH(){
   var joinUI='<div class="field"><label for="f-code">연결 코드 8자리</label><input class="inp num" id="f-code" autocomplete="off" autocapitalize="characters" placeholder="예: K7M2QX9A" style="letter-spacing:.12em"></div><button type="button" class="btn" data-act="sp-join">코드로 연결</button>';
   if(!space){
     if(spaceId())return '<div class="sync"><b>'+title+'</b><span class="fine">연결 정보를 불러오는 중이에요…</span></div>';
-    return '<div class="sync"><b>'+title+'</b>'+(MODE==='me'?'<span class="fine">공유 공간을 만들고 코드를 남편에게 보내면, 남편 앱(우리 집)과 일정·할 일·살 것·루틴을 같이 볼 수 있어요.</span><button type="button" class="btn google" data-act="sp-create">공유 공간 만들기</button><span class="fine" style="text-align:center">또는 받은 코드가 있으면</span>':'<span class="fine">아내 앱의 설정 → 남편과 공유에 있는 8자리 코드를 넣어주세요.</span>')+joinUI+'</div>';
+    return '<div class="sync"><b>'+title+'</b>'+(MODE==='me'?'<span class="fine">공유 공간을 만들고 코드를 남편에게 보내면, 남편 앱(Jeremina)과 일정·할 일·살 것·루틴을 같이 볼 수 있어요.</span><button type="button" class="btn google" data-act="sp-create">공유 공간 만들기</button><span class="fine" style="text-align:center">또는 받은 코드가 있으면</span>':'<span class="fine">아내 앱의 설정 → 남편과 공유에 있는 8자리 코드를 넣어주세요.</span>')+joinUI+'</div>';
   }
   var others=(space.members||[]).filter(function(u){return u!==user.uid});
   if(!others.length)return '<div class="sync"><b>'+title+' · 연결 기다리는 중</b><span class="fine">'+(MODE==='me'?'남편 폰에서 아래 주소를 열고 로그인한 다음, 이 코드를 넣으면 연결돼요.':'상대방이 이 코드를 넣으면 연결돼요.')+'</span><div class="codebox">'+esc(space.id)+'</div>'+(MODE==='me'?'<span class="urlline">'+US_URL+'</span>':'')+'<div class="sp-actions"><button type="button" class="btn" data-act="sp-copy">주소와 코드 복사</button></div><button type="button" class="textlink" data-act="sp-leave">'+(spArmed?'한 번 더 누르면 공간을 지워요':'공유 공간 지우기')+'</button></div>';

@@ -383,6 +383,10 @@ i.tm{font-style:normal}
 .tl-now::before{content:"";position:absolute;left:0;top:-4px;width:10px;height:10px;border-radius:5px;background:var(--accent)}
 .tl-ghost{position:absolute;left:2px;right:2px;border-radius:7px;background:var(--accent-weak);border:1.5px dashed var(--accent);color:var(--accent-ink);font-size:12px;font-weight:600;padding:3px 7px;z-index:6;pointer-events:none}
 .tl-help{padding:0 6px}
+.tpick{display:flex;align-items:center;gap:8px}
+.tpick .tlab{width:34px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--fg3)}
+.tpick .hm{flex:1;min-width:0;font-variant-numeric:tabular-nums;font-size:16px}
+.tdur .chip{height:32px;font-size:13px}
 </style>
 </head>
 <body>
@@ -992,7 +996,7 @@ function drawSheet(){
     h='<h2>'+(d.id?'일정 수정':'새 일정')+'</h2>'+
     '<div class="field"><label for="f-title">제목</label><input class="inp" id="f-title" data-f="title" value="'+esc(d.title)+'" placeholder="예: 치과 정기검진" data-autofocus></div>'+
     '<div class="field"><label for="f-date">날짜</label><input class="inp" type="date" id="f-date" data-f="date" value="'+d.date+'"></div>'+
-    '<div class="grid2"><div class="field"><label for="f-time">시작 (비우면 종일)</label><input class="inp" type="time" id="f-time" data-f="time" value="'+(d.time||'')+'"></div><div class="field"><label for="f-end">종료</label><input class="inp" type="time" id="f-end" data-f="end" value="'+(d.end||'')+'"></div></div>'+
+    timeH(d)+
     repeatH(d)+
     '<div class="field"><span class="lab">색</span><div class="colors">'+COLORS.map(function(c){return '<button type="button" class="'+c[1]+'" data-f="color" data-v="'+c[0]+'" aria-label="'+c[0]+'" aria-pressed="'+(d.color===c[0])+'"></button>'}).join('')+'</div></div>'+
     shareH(d)+footer(!!d.id,(d.title||'').trim()&&d.date);
@@ -1082,8 +1086,33 @@ function shareH(d){
   return '<div class="field"><span class="lab">공유</span>'+segH('_sh',MODE==='me'?[['false','나만 보기'],['true','남편과 공유']]:[['true','아내와 공유'],['false','나만 보기']],!!d._sh)+'</div>'+(d._sh&&d.by&&user&&d.by!==user.uid?'<p class="fine">'+esc(nameOf(d.by))+'이(가) 추가했어요</p>':'');
 }
 function memoOk(d){return ((d.title||'')+((d.mode||'text')==='text'?(d.body||''):(d.items||[]).map(function(x){return x.t}).join(''))).trim()}
+function hmSel(id,f,val,isMin){
+  var o='',n=isMin?60:24,cur=+val||0,has=false;
+  for(var i=0;i<n;i+=(isMin?5:1)){if(i===cur)has=true;o+='<option value="'+i+'"'+(i===cur?' selected':'')+'>'+(isMin?pad(i)+'분':i+'시')+'</option>'}
+  if(isMin&&!has)o='<option value="'+cur+'" selected>'+pad(cur)+'분</option>'+o;
+  return '<select class="inp hm" id="'+id+'" data-f="'+f+'" aria-label="'+(isMin?'분':'시')+'">'+o+'</select>';
+}
+function timeH(d){
+  var allDay=!d.time;
+  var h='<div class="field"><span class="lab">시간</span>'+segH('tmode',[['all','종일'],['set','시간 지정']],allDay?'all':'set')+'</div>';
+  if(allDay)return h;
+  var st=toMin(d.time),en=d.end?toMin(d.end):Math.min(st+60,1439);
+  h+='<div class="tpick"><span class="tlab">시작</span>'+hmSel('f-th','th',Math.floor(st/60))+hmSel('f-tm','tm',st%60,true)+'</div>'+
+     '<div class="tpick"><span class="tlab">종료</span>'+hmSel('f-eh','eh',Math.floor(en/60))+hmSel('f-em','em',en%60,true)+'</div>'+
+     '<div class="chips tdur">'+[[30,'+30분'],[60,'+1시간'],[90,'+1시간 30분'],[120,'+2시간']].map(function(x){return '<button type="button" class="chip soft" data-f="tdur" data-v="'+x[0]+'" aria-pressed="'+(en-st===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  return h;
+}
 function setField(name,v){
   var d=form.d;
+  if(name==='tmode'){if(v==='all'){d.time='';d.end=''}else if(!d.time){var nd=new Date(),nh=Math.min(22,nd.getHours()+1);d.time=pad(nh)+':00';d.end=pad(nh+1)+':00'}return}
+  if(name==='th'||name==='tm'||name==='eh'||name==='em'||name==='tdur'){
+    var st=toMin(d.time),en=d.end?toMin(d.end):st+60,len=Math.max(15,en-st);
+    if(name==='th')st=(+v)*60+st%60;if(name==='tm')st=Math.floor(st/60)*60+(+v);
+    if(name==='th'||name==='tm'){en=Math.min(1439,st+len)}
+    if(name==='eh')en=(+v)*60+en%60;if(name==='em')en=Math.floor(en/60)*60+(+v);
+    if(name==='tdur')en=Math.min(1439,st+(+v));
+    if(en<=st)en=Math.min(1439,st+30);
+    d.time=fromMin(st);d.end=fromMin(en);return}
   if(name==='rdays'){v=+v;d.rdays=(d.rdays||[]).slice();var ri=d.rdays.indexOf(v);if(ri>=0){if(d.rdays.length>1)d.rdays.splice(ri,1)}else d.rdays.push(v);return}
   if(name==='wday'){v=+v;d.days=(d.days||[]).slice();var ix=d.days.indexOf(v);if(ix>=0)d.days.splice(ix,1);else d.days.push(v);return}
   if(form.kind==='memo'&&name==='mode'){var om=d.mode||'text';if(om===v)return;
@@ -1155,7 +1184,7 @@ sheet.addEventListener('input',function(e){
   if(form.kind==='annual'&&(f==='m'||f==='d')){var pv=document.getElementById('pv');if(pv)pv.innerHTML=previewH(form.d)}
   var btn=sheet.querySelector('button[type="submit"]');if(btn){var d=form.d,ok={event:(d.title||'').trim()&&d.date,todo:(d.text||'').trim(),buy:(d.text||'').trim(),memo:memoOk(d),annual:(d.name||'').trim(),routine:(d.name||'').trim()}[form.kind];btn.disabled=!ok}
 });
-sheet.addEventListener('change',function(e){if(e.target.id==='f-import'){importBackup(e.target.files&&e.target.files[0]);return}if(e.target.tagName==='SELECT'){setField(e.target.dataset.f,e.target.value);if(form.kind==='routine'){drawSheetKeep();return}if(form.kind==='annual'&&form.d.cal==='solar'&&e.target.dataset.f==='m'){drawSheetKeep();return}var pv=document.getElementById('pv');if(pv)pv.innerHTML=previewH(form.d)}});
+sheet.addEventListener('change',function(e){if(e.target.id==='f-import'){importBackup(e.target.files&&e.target.files[0]);return}if(e.target.tagName==='SELECT'){setField(e.target.dataset.f,e.target.value);if(form.kind==='routine'||(form.kind==='event'&&/^(th|tm|eh|em)$/.test(e.target.dataset.f))){drawSheetKeep();return}if(form.kind==='annual'&&form.d.cal==='solar'&&e.target.dataset.f==='m'){drawSheetKeep();return}var pv=document.getElementById('pv');if(pv)pv.innerHTML=previewH(form.d)}});
 sheet.addEventListener('submit',function(e){e.preventDefault();saveSheet()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!sheet.hidden)closeSheet()});
 
@@ -1237,8 +1266,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='19';
-var BUILT='2026년 11월 2일 오후 7:40';
+var APPV='20';
+var BUILT='2026년 11월 2일 오후 8:00';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}

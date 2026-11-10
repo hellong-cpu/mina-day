@@ -515,7 +515,7 @@ function put(col,item){
   if(form&&form.shx){var X=form.shx;if(X.sh){item._sh=true;item.by=X.by;if(X.doneBy)item.doneBy=X.doneBy}}
   if(item._sh&&!spaceId()){toast(MODE==='us'?'아내와 연결되어 있지 않아요. 설정에서 연결 코드를 넣어주세요':'남편과 연결되어 있지 않아요. 설정에서 연결해 주세요');return}
   var arr=S[col].filter(function(x){return x.id!==item.id});arr.push(item);S[col]=arr;render();save();
-  if(item._sh){if(fsdb&&user)spaceCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
+  if(item._sh){if(fsdb&&user){var o=clean(item);o.upd=Date.now();spaceCol(col).doc(item.id).set(o).catch(dbFail)}}
   else if(user&&fsdb){cloudCol(col).doc(item.id).set(clean(item)).catch(dbFail)}
 }
 function del(col,id){
@@ -1275,8 +1275,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='24';
-var BUILT='2026년 11월 6일 오후 9:00';
+var APPV='25';
+var BUILT='2026년 11월 10일 오전 11:55';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}

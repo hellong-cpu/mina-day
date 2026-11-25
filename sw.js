@@ -1,5 +1,5 @@
 /* 미나의 하루 / 우리 집 service worker: 화면 파일과 폰트·SDK만 캐시. 데이터(Firestore, 로그인) 요청은 통과. */
-const CACHE = 'mina-day-v25';
+const CACHE = 'mina-day-v26';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './apple-touch-icon.png?v=3',
                './us/', './us/index.html', './us/manifest.webmanifest', './us/icon-192.png?v=1', './us/apple-touch-icon.png?v=1'];
 const STATIC_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'www.gstatic.com', 'cdn.jsdelivr.net'];
@@ -19,4 +19,21 @@ self.addEventListener('fetch', e => {
     return;
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => { if (r.ok || r.type === 'opaque') { const c = r.clone(); caches.open(CACHE).then(x => x.put(req, c)); } return r; })));
+});
+/* 폰 알림: 서버(GitHub Actions)가 FCM으로 보낸 데이터를 알림으로 띄움 */
+self.addEventListener('push', e => {
+  let d = {};
+  try { const j = e.data ? e.data.json() : {}; d = Object.assign({}, j.notification || {}, j.data || {}); } catch (_) { d = { body: e.data ? e.data.text() : '' }; }
+  const title = d.title || '미나의 하루';
+  e.waitUntil(self.registration.showNotification(title, {
+    body: d.body || '', tag: d.tag || undefined, icon: './icon-192.png?v=3', badge: './icon-192.png?v=3', data: { url: d.url || './' }
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(x => x.url.startsWith(self.registration.scope) && !x.url.includes('/us/'));
+    return c ? c.focus().then(w => w && w.navigate ? w.navigate(url) : w) : self.clients.openWindow(url);
+  }));
 });

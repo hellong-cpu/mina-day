@@ -314,7 +314,13 @@ i.tm{font-style:normal}
 .mchk{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--fg2);padding:4px 0;text-align:left;width:100%;line-height:1.45}
 .mchk .check{width:18px;height:18px;border-radius:5px;margin-top:1px}
 .mchk .check svg{width:11px;height:11px}
-.mchk.done span:last-child{text-decoration:line-through;color:var(--fg4)}
+.mchk.done span:last-child{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--fg4)}
+.irow.done .inp{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--fg4)}
+.iwrap{position:relative;flex:1;min-width:0;display:flex}
+.istrike{display:none}
+.irow.done .istrike{display:block;position:absolute;left:15px;top:50%;height:1.5px;background:var(--fg4);pointer-events:none;max-width:calc(100% - 30px);overflow:hidden}
+.istrike i{visibility:hidden;font-style:normal;font-size:15.5px;white-space:pre;display:block;height:0}
+.irow.done .iwrap .inp{text-decoration:none}
 .mmore{font-size:12px;color:var(--fg3)}
 .items{display:flex;flex-direction:column;gap:6px}
 .irow{display:flex;align-items:center;gap:8px}
@@ -1042,7 +1048,7 @@ function drawSheet(){
     shareH(d)+footer(!!d.id,(d.name||'').trim());
   } else if(k==='memo'){
     var mode=d.mode||'text';
-    var itemsH='<div class="items">'+(d.items||[]).map(function(it,i){return '<div class="irow">'+(mode==='check'?'<button type="button" class="check sq'+(it.done?' on':'')+'" data-act="item-toggle" data-i="'+i+'" aria-label="체크">'+ICON_CHECK+'</button>':'<span class="bul"></span>')+'<label for="it-'+i+'" class="sr">항목 '+(i+1)+'</label><input class="inp" id="it-'+i+'" data-item="'+i+'" value="'+esc(it.t)+'" placeholder="항목 입력" autocomplete="off"><button type="button" class="iconbtn" data-act="item-del" data-i="'+i+'" aria-label="항목 삭제">×</button></div>'}).join('')+'<button type="button" class="textlink" data-act="item-add">+ 항목 추가</button></div>';
+    var itemsH='<div class="items">'+(d.items||[]).map(function(it,i){return '<div class="irow'+(mode==='check'&&it.done?' done':'')+'">'+(mode==='check'?'<button type="button" class="check sq'+(it.done?' on':'')+'" data-act="item-toggle" data-i="'+i+'" aria-label="체크">'+ICON_CHECK+'</button>':'<span class="bul"></span>')+'<label for="it-'+i+'" class="sr">항목 '+(i+1)+'</label>'+(function(){var inp='<input class="inp" id="it-'+i+'" data-item="'+i+'" value="'+esc(it.t)+'" placeholder="항목 입력" autocomplete="off">';return mode==='check'?'<span class="iwrap">'+inp+'<span class="istrike" aria-hidden="true"><i>'+esc(it.t)+'</i></span></span>':inp})()+'<button type="button" class="iconbtn" data-act="item-del" data-i="'+i+'" aria-label="항목 삭제">×</button></div>'}).join('')+'<button type="button" class="textlink" data-act="item-add">+ 항목 추가</button></div>';
     h='<h2>'+(d.id?'메모':'새 메모')+'</h2>'+
     '<div class="field"><label for="f-mt">제목</label><input class="inp" id="f-mt" data-f="title" value="'+esc(d.title)+'" placeholder="한 줄로 적어보세요" data-autofocus></div>'+
     '<div class="field"><span class="lab">형식</span>'+segH('mode',[['text','메모'],['bullet','글머리표'],['check','체크리스트']],mode)+'</div>'+
@@ -1189,7 +1195,7 @@ sheet.addEventListener('keydown',function(e){
   e.preventDefault();var i=+e.target.dataset.item;form.d.items.splice(i+1,0,{t:'',done:false});drawSheetKeep();focusItem(i+1);
 });
 sheet.addEventListener('input',function(e){
-  if(e.target.dataset.item!=null&&form&&form.d.items){form.d.items[+e.target.dataset.item].t=e.target.value;var sb=sheet.querySelector('button[type="submit"]');if(sb)sb.disabled=form.kind==='memo'?!memoOk(form.d):false;return}
+  if(e.target.dataset.item!=null&&form&&form.d.items){form.d.items[+e.target.dataset.item].t=e.target.value;var sk=e.target.parentNode.querySelector('.istrike i');if(sk)sk.textContent=e.target.value;var sb=sheet.querySelector('button[type="submit"]');if(sb)sb.disabled=form.kind==='memo'?!memoOk(form.d):false;return}
   var f=e.target.dataset.f;if(!f)return;setField(f,e.target.value);
   if(form.kind==='event'&&['rev','rcount','runtil','date'].indexOf(f)>=0){if(f==='rev')sheet.querySelectorAll('[data-f="rev"][data-v]').forEach(function(c){c.setAttribute('aria-pressed',String(c.dataset.v===e.target.value))});var rp=document.getElementById('rpv');if(rp)rp.innerHTML=rulePreview(form.d)}
   if(form.kind==='routine'&&(f==='every'||f==='last')){if(f==='every')sheet.querySelectorAll('[data-f="every"][data-v]').forEach(function(c){c.setAttribute('aria-pressed',String(c.dataset.v===e.target.value))});var pl=sheet.querySelector('.preview .pl');if(pl){var x=rtDue({mode:form.d.mode,every:form.d.every,eunit:form.d.eunit,last:form.d.last,since:form.d.since||TODAY});pl.textContent='다음 할 날: '+(x<=TODAY?'오늘':md(x))}var ph=sheet.querySelector('.preview .ph');if(ph)ph.textContent=rtFreq(form.d)}
@@ -1279,8 +1285,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='26';
-var BUILT='2026년 11월 25일 오후 5:00';
+var APPV='27';
+var BUILT='2026년 11월 26일 오후 1:45';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}

@@ -314,7 +314,9 @@ i.tm{font-style:normal}
 .mchk{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--fg2);padding:4px 0;text-align:left;width:100%;line-height:1.45}
 .mchk .check{width:18px;height:18px;border-radius:5px;margin-top:1px}
 .mchk .check svg{width:11px;height:11px}
-.mchk.done span:last-child{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--fg4)}
+.mchk.done span:last-child{color:var(--fg4)}
+.mchk .tx{font-style:normal}
+.mchk.done .tx{background:linear-gradient(var(--fg4),var(--fg4)) 0 52%/100% 1.5px no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .irow.done .inp{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--fg4)}
 .iwrap{position:relative;flex:1;min-width:0;display:flex}
 .istrike{display:none}
@@ -977,7 +979,7 @@ function memoV(){
     var head='<button class="mem-main" data-edit-memo="'+m.id+'"><span style="display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%"><span class="tag '+(TAGCLS[m.tag]||'k-birth')+'">'+esc(m.tag)+'</span>'+(m.pinned?'<span class="star">'+ICON_STAR(true)+'</span>':'')+'</span><b>'+txt(m.title||'제목 없음')+'</b>'+inner+'</button>';
     var chk='';
     if(mode==='check'){var dn=its.filter(function(x){return x.done}).length;
-      chk='<div class="mchks">'+its.slice(0,6).map(function(x,i){return '<button class="mchk'+(x.done?' done':'')+'" data-memo-chk="'+m.id+':'+i+'"><span class="check sq'+(x.done?' on':'')+'">'+ICON_CHECK+'</span><span>'+txt(x.t)+'</span></button>'}).join('')+'</div>'+(its.length>6?'<span class="mmore">+'+(its.length-6)+'개 더</span>':'')+'<span class="mmore num">'+dn+'/'+its.length+' 완료</span>'}
+      chk='<div class="mchks">'+its.slice(0,6).map(function(x,i){return '<button class="mchk'+(x.done?' done':'')+'" data-memo-chk="'+m.id+':'+i+'"><span class="check sq'+(x.done?' on':'')+'">'+ICON_CHECK+'</span><span><em class="tx">'+txt(x.t)+'</em></span></button>'}).join('')+'</div>'+(its.length>6?'<span class="mmore">+'+(its.length-6)+'개 더</span>':'')+'<span class="mmore num">'+dn+'/'+its.length+' 완료</span>'}
     return '<div class="memo">'+head+chk+linkChips(urlsIn(m.title,m.body,its.map(function(x){return x.t})))+'<small>'+ago(m.updatedAt)+'</small></div>'}).join('');
   return '<div class="row-head"><span class="h-page">아이디어 <span class="muted num" style="font-size:16px">'+S.memos.length+'</span></span><button class="btn small" data-act="new-memo">새 메모</button></div>'+
   '<div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label for="q-memo" class="sr">메모 검색</label><input id="q-memo" placeholder="메모 검색" value="'+esc(memoQuery)+'" autocomplete="off"></div>'+
@@ -1284,8 +1286,8 @@ var tt=null;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){el.classList.remove('show')},1800)}
 
 /* ================= 시작 ================= */
-var APPV='27';
-var BUILT='2026년 11월 26일 오후 1:45';
+var APPV='28';
+var BUILT='2026년 11월 26일 오후 1:50';
 function save(){var Pp={},Hh={};COLS.forEach(function(c){Pp[c]=S[c].filter(function(x){return !x._sh});Hh[c]=S[c].filter(function(x){return x._sh})});lsSet('mina-local',Pp);lsSet('mina-shared',Hh)}
 function clearSamples(){COLS.forEach(function(c){S[c].filter(function(x){return x.sample}).forEach(function(x){del(c,x.id)})});toast('예시를 지웠어요. 이제 직접 채워보세요')}
 function backupJSON(){var o={app:'mina-day',version:1,exportedAt:new Date().toISOString()};COLS.forEach(function(c){o[c]=S[c].filter(function(x){return !x._sh})});return JSON.stringify(o,null,1)}
